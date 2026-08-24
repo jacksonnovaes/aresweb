@@ -1,0 +1,101 @@
+"use client";
+
+import { ErrorAlert, PageLoading } from "@/components/common/feedback";
+import { PageHeader } from "@/components/common/page-header";
+import { StatusChip } from "@/components/common/status-chip";
+import { apiRequest, errorMessage } from "@/lib/api";
+import type { CompanySettings, ServiceOrderStatusDefinition } from "@/lib/types";
+import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
+import DevicesOtherRoundedIcon from "@mui/icons-material/DevicesOtherRounded";
+import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
+import {
+  Alert, Box, Button, Card, CardContent, Chip, FormControlLabel, Stack, Switch, TextField, Typography,
+} from "@mui/material";
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+export default function CompanySettingsPage() {
+  const [settings, setSettings] = useState<CompanySettings | null>(null);
+  const [statuses, setStatuses] = useState<ServiceOrderStatusDefinition[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [statusName, setStatusName] = useState("");
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true); setError("");
+    try {
+      const [settingsData, statusData] = await Promise.all([
+        apiRequest<CompanySettings>("/company-settings"),
+        apiRequest<ServiceOrderStatusDefinition[]>("/service-order-statuses"),
+      ]);
+      setSettings(settingsData); setStatuses(statusData);
+    }
+    catch (err) { setError(errorMessage(err)); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!settings) return;
+    setSaving(true); setSaved(false); setError("");
+    try {
+      setSettings(await apiRequest<CompanySettings>("/company-settings", {
+        method: "PUT", body: { requireAssets: settings.requireAssets },
+      }));
+      setSaved(true);
+    } catch (err) { setError(errorMessage(err)); }
+    finally { setSaving(false); }
+  }
+
+  async function createStatus(event: FormEvent) {
+    event.preventDefault();
+    if (!statusName.trim()) return;
+    setStatusSaving(true); setStatusError("");
+    try {
+      const created = await apiRequest<ServiceOrderStatusDefinition>("/service-order-statuses", {
+        method: "POST", body: { name: statusName.trim() },
+      });
+      setStatuses((current) => [...current, created].sort((a, b) => a.displayOrder - b.displayOrder));
+      setStatusName("");
+    } catch (err) { setStatusError(errorMessage(err)); }
+    finally { setStatusSaving(false); }
+  }
+
+  return (
+    <>
+      <PageHeader eyebrow="Empresa" title="Configuração da empresa" description="Defina como os atendimentos funcionam para o perfil da sua prestação de serviços." />
+      {loading && <PageLoading label="Carregando configurações..." />}
+      {!loading && error && !settings && <ErrorAlert message={error} onRetry={load} />}
+      {!loading && settings && <Stack spacing={3} sx={{ maxWidth: 760 }}><Card><Box component="form" onSubmit={submit}><CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}><Stack spacing={2.5}>
+        <Stack direction="row" spacing={1.5} alignItems="center"><Box sx={{ width: 44, height: 44, display: "grid", placeItems: "center", borderRadius: 2.25, bgcolor: "primary.main", color: "white" }}><DevicesOtherRoundedIcon /></Box><Box><Typography variant="h3">Ativos nos atendimentos</Typography><Typography variant="body2" color="text.secondary">Controle se a empresa trabalha com equipamentos, veículos, imóveis ou outros ativos.</Typography></Box></Stack>
+        {error && <Alert severity="error">{error}</Alert>}
+        {saved && <Alert severity="success">Configuração salva. Os próximos cadastros já usarão esta regra.</Alert>}
+        <Box sx={{ p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 2.5, bgcolor: "#F8FAFC" }}>
+          <FormControlLabel control={<Switch checked={!settings.requireAssets} onChange={(event) => { setSaved(false); setSettings({ requireAssets: !event.target.checked }); }} />} label={<Box><Typography fontWeight={800}>Não exigir ativos</Typography><Typography variant="body2" color="text.secondary">Use esta opção para diaristas, montadores, pedreiros e outros serviços identificados apenas pela descrição.</Typography></Box>} sx={{ m: 0, alignItems: "flex-start", gap: 1 }} />
+        </Box>
+        <Alert severity={settings.requireAssets ? "info" : "success"}>{settings.requireAssets ? "Serviços de manutenção continuarão exigindo a seleção de um ativo." : "O cadastro de serviços e as ordens não solicitarão ativo."}</Alert>
+        <Button type="submit" variant="contained" startIcon={<SaveRoundedIcon />} disabled={saving} sx={{ alignSelf: "flex-end" }}>{saving ? "Salvando..." : "Salvar configuração"}</Button>
+      </Stack></CardContent></Box></Card>
+      <Card><CardContent sx={{ p: { xs: 2.5, sm: 3.5 } }}><Stack spacing={2.5}>
+        <Stack direction="row" spacing={1.5} alignItems="center"><Box sx={{ width: 44, height: 44, display: "grid", placeItems: "center", borderRadius: 2.25, bgcolor: "secondary.main", color: "white" }}><AssignmentTurnedInRoundedIcon /></Box><Box><Typography variant="h3">Status das ordens</Typography><Typography variant="body2" color="text.secondary">Cadastre as etapas que representam o fluxo de atendimento da empresa.</Typography></Box></Stack>
+        <Box sx={{ p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 2.5, bgcolor: "#F8FAFC" }}>
+          <Typography variant="subtitle2" fontWeight={800} mb={1.5}>Status disponíveis</Typography>
+          <Stack direction="row" gap={1} flexWrap="wrap">
+            {statuses.map((status) => <Stack key={status.id} direction="row" spacing={0.75} alignItems="center"><StatusChip value={status.code} label={status.name} />{status.systemDefault && <Chip label="Padrão" size="small" variant="outlined" />}</Stack>)}
+          </Stack>
+        </Box>
+        {statusError && <Alert severity="error">{statusError}</Alert>}
+        <Box component="form" onSubmit={createStatus}><Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} alignItems={{ sm: "flex-start" }}>
+          <TextField label="Nome do novo status" placeholder="Ex.: Aguardando peças" value={statusName} onChange={(event) => setStatusName(event.target.value)} required fullWidth slotProps={{ htmlInput: { maxLength: 100 } }} helperText="O status ficará disponível imediatamente nas ordens de serviço." />
+          <Button type="submit" variant="contained" startIcon={<AddRoundedIcon />} disabled={statusSaving || !statusName.trim()} sx={{ minWidth: 180, height: 56 }}>{statusSaving ? "Cadastrando..." : "Cadastrar status"}</Button>
+        </Stack></Box>
+      </Stack></CardContent></Card></Stack>}
+    </>
+  );
+}
