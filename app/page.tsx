@@ -18,7 +18,7 @@ import {
     Typography
 } from "@mui/material";
 import Link from "next/link";
-import {FormEvent, useState} from "react";
+import {FormEvent, useEffect, useState} from "react";
 
 export default function LoginPage() {
     const {login} = useAuth();
@@ -27,6 +27,13 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
+    const [registrationStatus, setRegistrationStatus] = useState<"sucesso" | "pendente" | "excluida" | null>(null);
+
+    useEffect(() => {
+        const status = new URLSearchParams(window.location.search).get("cadastro");
+        const accountStatus = new URLSearchParams(window.location.search).get("conta");
+        setRegistrationStatus(accountStatus === "excluida" ? "excluida" : status === "sucesso" || status === "pendente" ? status : null);
+    }, []);
 
     async function submit(event: FormEvent) {
         event.preventDefault();
@@ -45,6 +52,9 @@ export default function LoginPage() {
         <AuthShell title="Bem-vindo de volta" subtitle="Entre para continuar gerenciando sua operação.">
             <Box component="form" onSubmit={submit}>
                 <Stack spacing={2.25}>
+                    {registrationStatus === "sucesso" && <Alert severity="success">Empresa criada e primeira mensalidade aprovada. Você já pode entrar.</Alert>}
+                    {registrationStatus === "pendente" && <Alert severity="warning">Empresa criada. O acesso será liberado após a confirmação da mensalidade.</Alert>}
+                    {registrationStatus === "excluida" && <Alert severity="success">A empresa e seus dados operacionais foram excluídos.</Alert>}
                     {error && <Alert severity="error">{error}</Alert>}
                     <TextField label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                                autoComplete="email" required fullWidth autoFocus/>

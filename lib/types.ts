@@ -64,6 +64,67 @@ export interface Branding {
 
 export interface CompanySettings {
   requireAssets: boolean;
+  subscriptionPlan: SubscriptionPlan;
+  subscriptionActive: boolean;
+  subscriptionPaidUntil?: string | null;
+  subscriptionMonthlyPrice: number;
+  couponCode?: string | null;
+  couponDiscountPercentage: number;
+  quoteCalculationMethod: QuoteCalculationMethod;
+  defaultSquareMeterPrice?: number | null;
+  defaultCubicMeterPrice?: number | null;
+}
+
+export type SubscriptionPlan = "ESSENTIAL" | "PROFESSIONAL" | "BUSINESS";
+export type QuoteCalculationMethod = "QUANTITY" | "SQUARE_METER" | "CUBIC_METER";
+
+export interface WhatsAppPlanSimulation {
+  deliveryMode: "SIMULATION";
+  destination: string;
+  plan: SubscriptionPlan;
+  planName: string;
+  originalPrice: number;
+  discountPercentage: number;
+  discountAmount: number;
+  monthlyPrice: number;
+  couponCode?: string | null;
+  message: string;
+  simulatedAt: string;
+}
+
+export interface RegistrationConfiguration {
+  subscriptionPaymentSimulationEnabled: boolean;
+  couponEnabled: boolean;
+  termsVersion: string;
+  privacyVersion: string;
+}
+
+export interface TenantRegistrationResult {
+  tenantId: string;
+  userId: string;
+  slug: string;
+  plan: SubscriptionPlan;
+  subscriptionActive: boolean;
+  subscriptionPaidUntil?: string | null;
+  originalPrice: number;
+  discountPercentage: number;
+  monthlyPrice: number;
+  couponCode?: string | null;
+}
+
+export interface CouponValidation {
+  plan: SubscriptionPlan;
+  originalPrice: number;
+  discountPercentage: number;
+  discountAmount: number;
+  monthlyPrice: number;
+  couponCode: string;
+  couponApplied: boolean;
+}
+
+export interface DataDeletionResult {
+  receiptId: string;
+  deletedAt: string;
 }
 
 export type CustomerType = "PERSON" | "COMPANY";
@@ -146,6 +207,11 @@ export interface ServiceOrderQuoteLine {
   quantity: number;
   unit: string;
   unitPrice: number;
+  calculationMethod: QuoteCalculationMethod;
+  widthMeters?: number | null;
+  lengthMeters?: number | null;
+  heightMeters?: number | null;
+  billableQuantity?: number;
   total?: number;
 }
 

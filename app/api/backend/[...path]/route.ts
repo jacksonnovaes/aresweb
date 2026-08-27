@@ -11,7 +11,8 @@ const allowedPaths = [
   /^auth\/(login|refresh|logout|forgot-password|reset-password|change-password|me)$/,
   /^branding$/,
   /^company-settings$/,
-  /^tenants\/register$/,
+  /^tenants\/(register|registration-config|plan-whatsapp-simulation)$/,
+  /^tenants\/coupon-validation$/,
   /^users(?:\/[0-9a-f-]+\/status)?$/i,
   /^customers(?:\/[0-9a-f-]+)?$/i,
   /^assets(?:\/[0-9a-f-]+)?$/i,
@@ -19,6 +20,7 @@ const allowedPaths = [
   /^services(?:\/[0-9a-f-]+)?$/i,
   /^service-order-statuses$/i,
   /^service-orders(?:\/[0-9a-f-]+(?:\/(?:status|quote|document|email))?)?$/i,
+  /^privacy\/(export|account)$/,
 ];
 
 const publicPaths = new Set([
@@ -27,6 +29,9 @@ const publicPaths = new Set([
   "auth/reset-password",
   "branding",
   "tenants/register",
+  "tenants/registration-config",
+  "tenants/plan-whatsapp-simulation",
+  "tenants/coupon-validation",
 ]);
 
 function cookieOptions(maxAge: number) {
@@ -67,6 +72,8 @@ async function copyResponse(response: Response) {
   const headers = new Headers();
   const contentType = response.headers.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);
+  const contentDisposition = response.headers.get("content-disposition");
+  if (contentDisposition) headers.set("Content-Disposition", contentDisposition);
   return new NextResponse(body, { status: response.status, headers });
 }
 
@@ -119,6 +126,13 @@ async function proxyHandler(request: NextRequest, context: RouteContext) {
 
   if (isPublicPath) return copyResponse(response);
 
+  if (path === "privacy/account" && response.ok) {
+    const result = await copyResponse(response);
+    result.cookies.delete(ACCESS_COOKIE);
+    result.cookies.delete(REFRESH_COOKIE);
+    return result;
+  }
+
   if (response.status === 401 && refreshToken && !path.startsWith("auth/")) {
     const refreshResponse = await fetch(`${API_URL}/api/v1/auth/refresh`, {
       method: "POST",
@@ -131,6 +145,11 @@ async function proxyHandler(request: NextRequest, context: RouteContext) {
       const refreshed = await refreshResponse.json();
       response = await upstream(request, path, refreshed.accessToken, originalBody);
       const result = await copyResponse(response);
+      if (path === "privacy/account" && response.ok) {
+        result.cookies.delete(ACCESS_COOKIE);
+        result.cookies.delete(REFRESH_COOKIE);
+        return result;
+      }
       result.cookies.set(ACCESS_COOKIE, refreshed.accessToken, cookieOptions(Number(refreshed.expiresIn ?? 900)));
       result.cookies.set(REFRESH_COOKIE, refreshed.refreshToken, cookieOptions(60 * 60 * 24 * 30));
       return result;

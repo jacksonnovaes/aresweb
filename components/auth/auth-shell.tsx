@@ -4,7 +4,8 @@ import { BrandMark } from "@/components/common/brand-mark";
 import { useBrand } from "@/contexts/brand-context";
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import { Box, Container, Stack, Typography } from "@mui/material";
+import { Box, Container, Link as MuiLink, Stack, Typography } from "@mui/material";
+import Link from "next/link";
 
 export function AuthShell({ children, title, subtitle }: { children: React.ReactNode; title: string; subtitle: string }) {
   const { brand } = useBrand();
@@ -21,7 +22,13 @@ export function AuthShell({ children, title, subtitle }: { children: React.React
             {children}
           </Box>
         </Container>
-        <Container maxWidth="sm" sx={{ px: { xs: 2.5, sm: 5 }, pb: 3 }}><Typography variant="caption" color="text.secondary">© {new Date().getFullYear()} {brand.tradeName}</Typography></Container>
+        <Container maxWidth="sm" sx={{ px: { xs: 2.5, sm: 5 }, pb: 3 }}>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={{ xs: 0.5, sm: 2 }}>
+            <Typography variant="caption" color="text.secondary">© {new Date().getFullYear()} {brand.tradeName}</Typography>
+            <MuiLink component={Link} href="/termos-de-uso" variant="caption" underline="hover">Termos de Uso</MuiLink>
+            <MuiLink component={Link} href="/politica-de-privacidade" variant="caption" underline="hover">Política de Privacidade</MuiLink>
+          </Stack>
+        </Container>
       </Box>
       <Box sx={{
         display: { xs: "none", lg: "flex" }, position: "relative", overflow: "hidden", color: "white", p: 8,
