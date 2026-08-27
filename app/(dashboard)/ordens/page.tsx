@@ -29,7 +29,13 @@ import {
 } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
-const blank = () => ({ customerId: "", assetId: "", lines: [emptyQuoteLine()], title: "", description: "", priority: "NORMAL" as ServiceOrderPriority, assignedTechnicianId: "", dueAt: "" });
+const blank = (settings?: CompanySettings) => ({
+  customerId: "", assetId: "",
+  lines: [emptyQuoteLine(settings?.quoteCalculationMethod, settings?.defaultSquareMeterPrice,
+    settings?.defaultCubicMeterPrice)],
+  title: "", description: "", priority: "NORMAL" as ServiceOrderPriority,
+  assignedTechnicianId: "", dueAt: "",
+});
 
 export default function OrdersPage() {
   const { can } = useAuth();
@@ -39,7 +45,12 @@ export default function OrdersPage() {
   const [services, setServices] = useState<CatalogService[]>([]);
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [statuses, setStatuses] = useState<ServiceOrderStatusDefinition[]>([]);
-  const [companySettings, setCompanySettings] = useState<CompanySettings>({ requireAssets: true });
+  const [companySettings, setCompanySettings] = useState<CompanySettings>({
+    requireAssets: true, subscriptionPlan: "ESSENTIAL", subscriptionActive: false,
+    subscriptionPaidUntil: null, subscriptionMonthlyPrice: 49.9, couponDiscountPercentage: 0,
+    quoteCalculationMethod: "QUANTITY", defaultSquareMeterPrice: null,
+    defaultCubicMeterPrice: null,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
@@ -115,7 +126,7 @@ export default function OrdersPage() {
   }), [customerMap, orders, search, statusFilter]);
   const set = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) => setForm((current) => ({ ...current, [field]: value }));
 
-  function startCreate() { setForm(blank()); setFormError(""); setOpen(true); }
+  function startCreate() { setForm(blank(companySettings)); setFormError(""); setOpen(true); }
   async function submit(event: FormEvent) {
     event.preventDefault(); setSaving(true); setFormError("");
     try {
@@ -123,6 +134,10 @@ export default function OrdersPage() {
         customerId: form.customerId, assetId: formRequiresAsset ? form.assetId : null, lines: form.lines.map((line) => ({
           serviceId: line.serviceId || null, description: line.description,
           quantity: Number(line.quantity), unit: line.unit, unitPrice: Number(line.unitPrice),
+          calculationMethod: line.calculationMethod,
+          widthMeters: line.calculationMethod !== "QUANTITY" ? Number(line.widthMeters) : null,
+          lengthMeters: line.calculationMethod !== "QUANTITY" ? Number(line.lengthMeters) : null,
+          heightMeters: line.calculationMethod === "CUBIC_METER" ? Number(line.heightMeters) : null,
         })), title: form.title,
         description: form.description || null, priority: form.priority,
         assignedTechnicianId: form.assignedTechnicianId || null,
@@ -184,6 +199,10 @@ export default function OrdersPage() {
         method: "PUT", body: { assetId: quoteRequiresAsset ? quoteAssetId : null, lines: quoteLines.map((line) => ({
           serviceId: line.serviceId || null, description: line.description,
           quantity: Number(line.quantity), unit: line.unit, unitPrice: Number(line.unitPrice),
+          calculationMethod: line.calculationMethod,
+          widthMeters: line.calculationMethod !== "QUANTITY" ? Number(line.widthMeters) : null,
+          lengthMeters: line.calculationMethod !== "QUANTITY" ? Number(line.lengthMeters) : null,
+          heightMeters: line.calculationMethod === "CUBIC_METER" ? Number(line.heightMeters) : null,
         })) },
       });
       setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
@@ -222,7 +241,7 @@ export default function OrdersPage() {
         <Box><FormControl fullWidth required><InputLabel>Cliente</InputLabel><Select label="Cliente" value={form.customerId} onChange={(e) => { set("customerId", e.target.value); set("assetId", ""); }}>{customers.map((customer) => <MenuItem value={customer.id} key={customer.id}>{customer.name}</MenuItem>)}</Select></FormControl>{can("CUSTOMER_CREATE") && <RelatedCreateButton label="Cadastrar novo cliente" onClick={() => setQuickCustomerOpen(true)} />}</Box>
         <TextField label="Título da ordem" value={form.title} onChange={(e) => set("title", e.target.value)} required fullWidth autoFocus />
         <TextField label="Descrição do problema / solicitação" value={form.description} onChange={(e) => set("description", e.target.value)} multiline minRows={3} fullWidth />
-        <QuoteLinesEditor lines={form.lines} services={services} onChange={(lines) => set("lines", lines)} onCreateService={can("SERVICE_CREATE") ? () => setQuickServiceOpen(true) : undefined} />
+        <QuoteLinesEditor lines={form.lines} services={services} onChange={(lines) => set("lines", lines)} onCreateService={can("SERVICE_CREATE") ? () => setQuickServiceOpen(true) : undefined} defaultCalculationMethod={companySettings.quoteCalculationMethod} defaultSquareMeterPrice={companySettings.defaultSquareMeterPrice} defaultCubicMeterPrice={companySettings.defaultCubicMeterPrice} />
         {formRequiresAsset ? <Box><Alert severity="info" sx={{ mb: 1.5 }}>Uma das linhas é uma manutenção. Selecione o ativo que receberá o serviço.</Alert><FormControl fullWidth required disabled={!form.customerId}><InputLabel>Ativo em manutenção</InputLabel><Select label="Ativo em manutenção" value={form.assetId} onChange={(e) => set("assetId", e.target.value)}>{filteredAssets.map((asset) => <MenuItem value={asset.id} key={asset.id}>{asset.name}</MenuItem>)}</Select></FormControl>{can("ASSET_CREATE") && <RelatedCreateButton label={form.customerId ? "Cadastrar novo ativo" : "Selecione o cliente para cadastrar um ativo"} disabled={!form.customerId} onClick={() => setQuickAssetOpen(true)} />}</Box> : <Alert severity="success">{companySettings.requireAssets ? "Serviço sem manutenção de ativo: apenas o cliente e a descrição do atendimento serão registrados." : "A empresa está configurada para não exigir ativos. Apenas o cliente e a descrição serão registrados."}</Alert>}
         <FormControl fullWidth required><InputLabel>Prioridade</InputLabel><Select label="Prioridade" value={form.priority} onChange={(e) => set("priority", e.target.value as ServiceOrderPriority)}>{["LOW", "NORMAL", "HIGH", "URGENT"].map((priority) => <MenuItem key={priority} value={priority}>{enumLabel(priority)}</MenuItem>)}</Select></FormControl>
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="flex-start">{(users.length > 0 || can("USER_MANAGE")) && <Box sx={{ width: "100%" }}><FormControl fullWidth><InputLabel>Técnico responsável</InputLabel><Select label="Técnico responsável" value={form.assignedTechnicianId} onChange={(e) => set("assignedTechnicianId", e.target.value)}><MenuItem value="">Não atribuído</MenuItem>{users.filter((user) => user.roles.includes("TECHNICIAN") && user.status === "ACTIVE").map((user) => <MenuItem value={user.id} key={user.id}>{user.name}</MenuItem>)}</Select></FormControl>{can("USER_MANAGE") && <RelatedCreateButton label="Cadastrar novo técnico" onClick={() => setQuickTechnicianOpen(true)} />}</Box>}<TextField label="Prazo" type="datetime-local" value={form.dueAt} onChange={(e) => set("dueAt", e.target.value)} fullWidth slotProps={{ inputLabel: { shrink: true } }} /></Stack>
@@ -233,7 +252,7 @@ export default function OrdersPage() {
         <FormControl fullWidth required><InputLabel>Novo status</InputLabel><Select label="Novo status" value={nextStatus} onChange={(e) => setNextStatus(e.target.value as ServiceOrderStatus)}>{statusOrder && statuses.filter((status) => status.code !== statusOrder.status).map((status) => <MenuItem key={status.code} value={status.code}>{status.name}</MenuItem>)}</Select></FormControl>
         <TextField label="Valor final (opcional)" type="number" value={finalValue} onChange={(e) => setFinalValue(e.target.value)} fullWidth slotProps={{ htmlInput: { min: 0, step: 0.01 }, input: { startAdornment: <InputAdornment position="start">R$</InputAdornment> } }} />
       </Stack></DialogContent><DialogActions sx={{ p: 2.5 }}><Button onClick={() => setStatusOrder(null)} disabled={saving}>Cancelar</Button><Button variant="contained" onClick={changeStatus} disabled={saving || !nextStatus} startIcon={<BuildCircleOutlinedIcon />}>{saving ? "Atualizando..." : "Confirmar etapa"}</Button></DialogActions></Dialog>
-      <Dialog open={Boolean(quoteOrder)} onClose={() => !quoteSaving && setQuoteOrder(null)} fullWidth maxWidth="md"><DialogTitle>Editar orçamento<Typography variant="body2" color="text.secondary" mt={0.5}>{quoteOrder?.title}</Typography></DialogTitle><DialogContent dividers><Stack spacing={2}>{quoteError && <Alert severity="error">{quoteError}</Alert>}<QuoteLinesEditor lines={quoteLines} services={services} onChange={setQuoteLines} />{quoteRequiresAsset ? <FormControl fullWidth required><InputLabel>Ativo em manutenção</InputLabel><Select label="Ativo em manutenção" value={quoteAssetId} onChange={(event) => setQuoteAssetId(event.target.value)}>{quoteAssets.map((asset) => <MenuItem value={asset.id} key={asset.id}>{asset.name}</MenuItem>)}</Select></FormControl> : <Alert severity="info">Este orçamento não exige ativo.</Alert>}</Stack></DialogContent><DialogActions sx={{ p: 2.5 }}><Button onClick={() => setQuoteOrder(null)} disabled={quoteSaving}>Cancelar</Button><Button variant="contained" startIcon={<RequestQuoteOutlinedIcon />} onClick={saveQuote} disabled={quoteSaving || (quoteRequiresAsset && !quoteAssetId)}>{quoteSaving ? "Salvando..." : "Salvar orçamento"}</Button></DialogActions></Dialog>
+      <Dialog open={Boolean(quoteOrder)} onClose={() => !quoteSaving && setQuoteOrder(null)} fullWidth maxWidth="md"><DialogTitle>Editar orçamento<Typography variant="body2" color="text.secondary" mt={0.5}>{quoteOrder?.title}</Typography></DialogTitle><DialogContent dividers><Stack spacing={2}>{quoteError && <Alert severity="error">{quoteError}</Alert>}<QuoteLinesEditor lines={quoteLines} services={services} onChange={setQuoteLines} defaultCalculationMethod={companySettings.quoteCalculationMethod} defaultSquareMeterPrice={companySettings.defaultSquareMeterPrice} defaultCubicMeterPrice={companySettings.defaultCubicMeterPrice} />{quoteRequiresAsset ? <FormControl fullWidth required><InputLabel>Ativo em manutenção</InputLabel><Select label="Ativo em manutenção" value={quoteAssetId} onChange={(event) => setQuoteAssetId(event.target.value)}>{quoteAssets.map((asset) => <MenuItem value={asset.id} key={asset.id}>{asset.name}</MenuItem>)}</Select></FormControl> : <Alert severity="info">Este orçamento não exige ativo.</Alert>}</Stack></DialogContent><DialogActions sx={{ p: 2.5 }}><Button onClick={() => setQuoteOrder(null)} disabled={quoteSaving}>Cancelar</Button><Button variant="contained" startIcon={<RequestQuoteOutlinedIcon />} onClick={saveQuote} disabled={quoteSaving || (quoteRequiresAsset && !quoteAssetId)}>{quoteSaving ? "Salvando..." : "Salvar orçamento"}</Button></DialogActions></Dialog>
       <ServiceOrderDocumentDialog open={Boolean(printOrder)} document={printDocument} loading={printLoading} error={printError} onClose={() => !printLoading && setPrintOrder(null)} onRetry={() => printOrder && loadPrintDocument(printOrder)} />
       <Dialog open={Boolean(emailOrder)} onClose={() => !emailSending && setEmailOrder(null)} fullWidth maxWidth="sm"><Box component="form" onSubmit={sendEmail}><DialogTitle>Enviar ordem por e-mail<Typography variant="body2" color="text.secondary" mt={0.5}>{emailOrder?.title}</Typography></DialogTitle><DialogContent dividers><Stack spacing={2.25}>
         <Alert severity="info">Modo de simulação ativo: a mensagem será montada e registrada no backend, mas nenhum e-mail real será enviado até o SMTP ser configurado.</Alert>
@@ -244,7 +263,7 @@ export default function OrdersPage() {
       </Stack></DialogContent><DialogActions sx={{ p: 2.5 }}><Button onClick={() => setEmailOrder(null)} disabled={emailSending}>{emailResult ? "Fechar" : "Cancelar"}</Button>{!emailResult && <Button type="submit" variant="contained" startIcon={<EmailOutlinedIcon />} disabled={emailSending}>{emailSending ? "Simulando..." : "Simular envio"}</Button>}</DialogActions></Box></Dialog>
       <QuickCustomerDialog open={quickCustomerOpen} onClose={() => setQuickCustomerOpen(false)} onCreated={(customer) => { setCustomers((current) => [customer, ...current]); set("customerId", customer.id); set("assetId", ""); }} />
       <QuickAssetDialog open={quickAssetOpen} customerId={form.customerId} customerName={customers.find((customer) => customer.id === form.customerId)?.name} onClose={() => setQuickAssetOpen(false)} onCreated={(asset) => { setAssets((current) => [asset, ...current]); set("assetId", asset.id); }} />
-      <QuickServiceDialog open={quickServiceOpen} requireAssets={companySettings.requireAssets} onClose={() => setQuickServiceOpen(false)} onCreated={(service) => { setServices((current) => [service, ...current]); setForm((current) => { const line = { serviceId: service.id, description: service.name, quantity: "1", unit: "SERVICO", unitPrice: String(service.basePrice) }; const replaceEmpty = current.lines.length === 1 && !current.lines[0].description && !current.lines[0].unitPrice; return { ...current, lines: replaceEmpty ? [line] : [...current.lines, line] }; }); }} />
+      <QuickServiceDialog open={quickServiceOpen} requireAssets={companySettings.requireAssets} onClose={() => setQuickServiceOpen(false)} onCreated={(service) => { setServices((current) => [service, ...current]); setForm((current) => { const line = { ...emptyQuoteLine(companySettings.quoteCalculationMethod, companySettings.defaultSquareMeterPrice, companySettings.defaultCubicMeterPrice), serviceId: service.id, description: service.name, unit: companySettings.quoteCalculationMethod === "SQUARE_METER" ? "M2" : companySettings.quoteCalculationMethod === "CUBIC_METER" ? "M3" : "SERVICO", unitPrice: String(service.basePrice) }; const replaceEmpty = current.lines.length === 1 && !current.lines[0].description && !current.lines[0].unitPrice; return { ...current, lines: replaceEmpty ? [line] : [...current.lines, line] }; }); }} />
       <QuickTechnicianDialog open={quickTechnicianOpen} onClose={() => setQuickTechnicianOpen(false)} onCreated={(technician) => { setUsers((current) => [technician, ...current]); set("assignedTechnicianId", technician.id); }} />
     </>
   );

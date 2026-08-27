@@ -21,7 +21,12 @@ const blank = {name: "", description: "", basePrice: "", estimatedMinutes: "", t
 export default function ServicesPage() {
     const {can} = useAuth();
     const [items, setItems] = useState<CatalogService[]>([]);
-    const [companySettings, setCompanySettings] = useState<CompanySettings>({requireAssets: true});
+    const [companySettings, setCompanySettings] = useState<CompanySettings>({
+        requireAssets: true, subscriptionPlan: "ESSENTIAL", subscriptionActive: false,
+        subscriptionPaidUntil: null, subscriptionMonthlyPrice: 49.9, couponDiscountPercentage: 0,
+        quoteCalculationMethod: "QUANTITY", defaultSquareMeterPrice: null,
+        defaultCubicMeterPrice: null,
+    });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [search, setSearch] = useState("");

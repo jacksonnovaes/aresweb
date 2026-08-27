@@ -15,7 +15,10 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-const publicPaths = ["/", "/cadastro", "/recuperar-senha", "/redefinir-senha"];
+const publicPaths = [
+  "/", "/cadastro", "/recuperar-senha", "/redefinir-senha",
+  "/termos-de-uso", "/politica-de-privacidade",
+];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Me | null>(null);
