@@ -33,6 +33,12 @@ export const quoteUnits = [
   { value: "SERVICO", label: "Serviço" },
 ];
 
+const calculationMethodOptions: Array<{ value: QuoteCalculationMethod; label: string }> = [
+  { value: "QUANTITY", label: "Quantidade × valor" },
+  { value: "SQUARE_METER", label: "Área: largura × comprimento" },
+  { value: "CUBIC_METER", label: "Volume: largura × comprimento × altura" },
+];
+
 export function emptyQuoteLine(
   calculationMethod: QuoteCalculationMethod = "QUANTITY",
   defaultSquareMeterPrice?: number | null,
@@ -82,14 +88,25 @@ interface Props {
   onChange: (lines: QuoteLineDraft[]) => void;
   onCreateService?: () => void;
   defaultCalculationMethod?: QuoteCalculationMethod;
+  enabledCalculationMethods?: QuoteCalculationMethod[];
   defaultSquareMeterPrice?: number | null;
   defaultCubicMeterPrice?: number | null;
 }
 
 export function QuoteLinesEditor({
   lines, services, onChange, onCreateService,
-  defaultCalculationMethod = "QUANTITY", defaultSquareMeterPrice, defaultCubicMeterPrice,
+  defaultCalculationMethod = "QUANTITY",
+  enabledCalculationMethods = calculationMethodOptions.map((option) => option.value),
+  defaultSquareMeterPrice, defaultCubicMeterPrice,
 }: Props) {
+  const availableMethodSet = new Set(enabledCalculationMethods.length
+    ? enabledCalculationMethods : [defaultCalculationMethod]);
+
+  function methodsForLine(currentMethod: QuoteCalculationMethod) {
+    return calculationMethodOptions.filter((option) =>
+      availableMethodSet.has(option.value) || option.value === currentMethod);
+  }
+
   function update(index: number, patch: Partial<QuoteLineDraft>) {
     onChange(lines.map((line, current) => current === index ? { ...line, ...patch } : line));
   }
@@ -141,7 +158,7 @@ export function QuoteLinesEditor({
           <Grid container spacing={1.5}>
             <Grid size={{ xs: 12, md: 4 }}><FormControl fullWidth><InputLabel>Serviço cadastrado</InputLabel><Select label="Serviço cadastrado" value={line.serviceId} onChange={(event) => selectService(index, event.target.value)}><MenuItem value="">Item personalizado (sem ativo)</MenuItem>{services.filter((service) => service.active).map((service) => <MenuItem value={service.id} key={service.id}>{service.name}{service.type === "MAINTENANCE" ? " • manutenção" : ""}</MenuItem>)}</Select></FormControl></Grid>
             <Grid size={{ xs: 12, md: 8 }}><TextField label="Descrição da linha" value={line.description} onChange={(event) => update(index, { description: event.target.value })} required fullWidth slotProps={{ htmlInput: { maxLength: 500 } }} /></Grid>
-            <Grid size={{ xs: 12, sm: line.calculationMethod === "CUBIC_METER" ? 2 : 4 }}><FormControl fullWidth required><InputLabel>Método de cálculo</InputLabel><Select label="Método de cálculo" value={line.calculationMethod} onChange={(event) => changeCalculationMethod(index, event.target.value as QuoteCalculationMethod)}><MenuItem value="QUANTITY">Quantidade × valor</MenuItem><MenuItem value="SQUARE_METER">Área: largura × comprimento</MenuItem><MenuItem value="CUBIC_METER">Volume: largura × comprimento × altura</MenuItem></Select></FormControl></Grid>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }}><FormControl fullWidth required><InputLabel>Método de cálculo</InputLabel><Select label="Método de cálculo" value={line.calculationMethod} onChange={(event) => changeCalculationMethod(index, event.target.value as QuoteCalculationMethod)}>{methodsForLine(line.calculationMethod).map((method) => <MenuItem value={method.value} key={method.value}>{method.label}</MenuItem>)}</Select></FormControl></Grid>
             {line.calculationMethod !== "QUANTITY" ? <>
               <Grid size={{ xs: 6, sm: 2 }}><TextField label="Largura (m)" type="number" value={line.widthMeters} onChange={(event) => update(index, { widthMeters: event.target.value })} required fullWidth slotProps={{ htmlInput: { min: 0.001, step: 0.001 } }} /></Grid>
               <Grid size={{ xs: 6, sm: 2 }}><TextField label="Comprimento (m)" type="number" value={line.lengthMeters} onChange={(event) => update(index, { lengthMeters: event.target.value })} required fullWidth slotProps={{ htmlInput: { min: 0.001, step: 0.001 } }} /></Grid>

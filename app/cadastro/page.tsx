@@ -3,14 +3,15 @@
 import { AuthShell } from "@/components/auth/auth-shell";
 import { apiRequest, errorMessage } from "@/lib/api";
 import type {
-  CouponValidation, RegistrationConfiguration, SubscriptionPlan, TenantRegistrationResult, WhatsAppPlanSimulation,
+  CouponValidation, RegistrationConfiguration, SubscriptionBillingCycle, SubscriptionPlan,
+  TenantRegistrationResult, WhatsAppPlanSimulation,
 } from "@/lib/types";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import LocalOfferRoundedIcon from "@mui/icons-material/LocalOfferRounded";
 import WhatsAppIcon from "@mui/icons-material/WhatsApp";
 import {
   Alert, Box, Button, Card, CardActionArea, Checkbox, Chip, CircularProgress, FormControlLabel, Grid,
-  InputAdornment, Link as MuiLink, Stack, Switch, TextField, Typography,
+  InputAdornment, Link as MuiLink, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from "@mui/material";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -24,6 +25,8 @@ interface RegistrationForm {
   logoUrl: string;
   primaryColor: string;
   plan: SubscriptionPlan;
+  billingCycle: SubscriptionBillingCycle;
+  additionalUserSeats: number;
   whatsapp: string;
   couponCode: string;
   simulatedPaymentApproved: boolean;
@@ -34,15 +37,10 @@ interface RegistrationForm {
   confirmation: string;
 }
 
-const plans: Array<{ code: SubscriptionPlan; name: string; price: number; description: string; highlight?: boolean }> = [
-  { code: "ESSENTIAL", name: "Essencial", price: 49.90, description: "Para começar a organizar clientes e ordens." },
-  { code: "PROFESSIONAL", name: "Profissional", price: 99.90, description: "Para equipes com mais atendimentos.", highlight: true },
-  { code: "BUSINESS", name: "Empresarial", price: 199.90, description: "Para operações que precisam escalar." },
-];
-
 const initial: RegistrationForm = {
   legalName: "", tradeName: "", slug: "", document: "", logoUrl: "", primaryColor: "#2457E6",
-  plan: "PROFESSIONAL", whatsapp: "", couponCode: "", simulatedPaymentApproved: false,
+  plan: "PRO", billingCycle: "MONTHLY", additionalUserSeats: 0,
+  whatsapp: "", couponCode: "", simulatedPaymentApproved: false,
   legalAccepted: false,
   adminName: "", email: "", password: "", confirmation: "",
 };
@@ -61,6 +59,11 @@ export default function RegisterPage() {
   const [couponQuote, setCouponQuote] = useState<CouponValidation | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError, setCouponError] = useState("");
+  const plans = registrationConfig?.plans ?? [];
+  const selectedPlan = plans.find((plan) => plan.code === form.plan);
+  const additionalUserUnitPrice = form.billingCycle === "ANNUAL"
+    ? registrationConfig?.additionalUserAnnualPrice ?? 129
+    : registrationConfig?.additionalUserMonthlyPrice ?? 12.9;
   const set = <K extends keyof RegistrationForm>(field: K, value: RegistrationForm[K]) =>
     setForm((current) => ({ ...current, [field]: value }));
 
@@ -97,6 +100,7 @@ export default function RegisterPage() {
         const result = await apiRequest<WhatsAppPlanSimulation>("/tenants/plan-whatsapp-simulation", {
           method: "POST", body: {
             tradeName: form.tradeName, whatsapp, plan: form.plan,
+            billingCycle: form.billingCycle, additionalUserSeats: form.additionalUserSeats,
             couponCode: couponQuote?.couponCode ?? null,
           },
         });
@@ -112,10 +116,22 @@ export default function RegisterPage() {
     }, 400);
 
     return () => { cancelled = true; window.clearTimeout(timeout); };
-  }, [couponQuote?.couponCode, form.plan, form.tradeName, form.whatsapp]);
+  }, [couponQuote?.couponCode, form.additionalUserSeats, form.billingCycle, form.plan, form.tradeName, form.whatsapp]);
 
   function selectPlan(plan: SubscriptionPlan) {
     set("plan", plan);
+    setCouponQuote(null);
+    setCouponError("");
+  }
+
+  function selectBillingCycle(billingCycle: SubscriptionBillingCycle) {
+    set("billingCycle", billingCycle);
+    setCouponQuote(null);
+    setCouponError("");
+  }
+
+  function setAdditionalUserSeats(value: number) {
+    set("additionalUserSeats", Math.min(100, Math.max(0, value)));
     setCouponQuote(null);
     setCouponError("");
   }
@@ -126,7 +142,10 @@ export default function RegisterPage() {
     setCouponLoading(true); setCouponError("");
     try {
       const result = await apiRequest<CouponValidation>("/tenants/coupon-validation", {
-        method: "POST", body: { plan: form.plan, couponCode },
+        method: "POST", body: {
+          plan: form.plan, billingCycle: form.billingCycle,
+          additionalUserSeats: form.additionalUserSeats, couponCode,
+        },
       });
       set("couponCode", result.couponCode);
       setCouponQuote(result);
@@ -169,7 +188,9 @@ export default function RegisterPage() {
       const result = await apiRequest<TenantRegistrationResult>("/tenants/register", { method: "POST", body: {
         legalName: form.legalName, tradeName: form.tradeName, slug: form.slug, document,
         logoUrl: form.logoUrl || null, primaryColor: form.primaryColor,
-        plan: form.plan, whatsapp, couponCode: couponQuote?.couponCode ?? null,
+        plan: form.plan, billingCycle: form.billingCycle,
+        additionalUserSeats: form.additionalUserSeats,
+        whatsapp, couponCode: couponQuote?.couponCode ?? null,
         simulatedPaymentApproved: form.simulatedPaymentApproved,
         termsAccepted: form.legalAccepted, privacyNoticeAcknowledged: form.legalAccepted,
         termsVersion: registrationConfig.termsVersion, privacyVersion: registrationConfig.privacyVersion,
@@ -200,24 +221,48 @@ export default function RegisterPage() {
               <Grid size={{ xs: 12, sm: 4 }}><TextField label="Cor principal" fullWidth value={form.primaryColor} onChange={(e) => set("primaryColor", e.target.value)} slotProps={{ input: { startAdornment: <InputAdornment position="start"><Box component="input" type="color" value={form.primaryColor} onChange={(e) => set("primaryColor", e.target.value)} sx={{ width: 26, height: 26, p: 0, border: 0, bgcolor: "transparent", cursor: "pointer" }} /></InputAdornment> } }} /></Grid>
             </Grid>
           </Box>
-          <Box><Typography variant="h3">Escolha seu plano</Typography><Typography variant="body2" color="text.secondary" mb={2}>Valores e pagamento simulados para demonstrar a contratação mensal.</Typography>
+          <Box><Typography variant="h3">Escolha seu plano</Typography><Typography variant="body2" color="text.secondary" mb={2}>O plano acompanha o tamanho da sua operação, independentemente do seu segmento.</Typography>
+            <ToggleButtonGroup value={form.billingCycle} exclusive fullWidth color="primary" sx={{ mb: 2 }}
+              onChange={(_, value: SubscriptionBillingCycle | null) => value && selectBillingCycle(value)}>
+              <ToggleButton value="MONTHLY">Mensal</ToggleButton>
+              <ToggleButton value="ANNUAL">Anual · cerca de 2 meses grátis</ToggleButton>
+            </ToggleButtonGroup>
             <Stack spacing={1.25}>
               {plans.map((plan) => {
                 const selected = form.plan === plan.code;
+                const basePrice = form.billingCycle === "ANNUAL" ? plan.annualPrice : plan.monthlyPrice;
+                const totalWithoutCoupon = basePrice + (selected ? form.additionalUserSeats * additionalUserUnitPrice : 0);
+                const displayedPrice = selected && couponQuote ? couponQuote.price : totalWithoutCoupon;
+                const monthlyEquivalent = selected && couponQuote
+                  ? couponQuote.monthlyEquivalent
+                  : form.billingCycle === "ANNUAL" ? displayedPrice / 12 : displayedPrice;
                 return <Card key={plan.code} variant="outlined" sx={{ borderColor: selected ? "primary.main" : "divider", borderWidth: selected ? 2 : 1, bgcolor: selected ? "action.selected" : "background.paper" }}>
                   <CardActionArea onClick={() => selectPlan(plan.code)} aria-pressed={selected} sx={{ p: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" spacing={2} alignItems="center">
-                      <Box><Stack direction="row" spacing={1} alignItems="center"><Typography fontWeight={850}>{plan.name}</Typography>{plan.highlight && <Chip label="Mais escolhido" size="small" color="primary" />}</Stack><Typography variant="body2" color="text.secondary" mt={0.5}>{plan.description}</Typography></Box>
+                    <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" spacing={2} alignItems={{ sm: "flex-start" }}>
+                      <Box flex={1}><Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap"><Typography fontWeight={850}>{plan.name}</Typography>{plan.code === "PRO" && <Chip label="Mais escolhido" size="small" color="primary" />}<Chip label={`${plan.includedUsers} ${plan.includedUsers === 1 ? "usuário" : "usuários"} incluído${plan.includedUsers === 1 ? "" : "s"}`} size="small" variant="outlined" /></Stack>
+                        <Stack spacing={0.45} mt={1}>{plan.features.map((feature) => <Stack key={feature} direction="row" spacing={0.75} alignItems="center"><CheckRoundedIcon color="success" sx={{ fontSize: 17 }} /><Typography variant="caption" color="text.secondary">{feature}</Typography></Stack>)}</Stack>
+                      </Box>
                       <Box textAlign="right" flexShrink={0}>
                         {selected && couponQuote?.couponApplied && <Typography variant="caption" color="text.secondary" sx={{ textDecoration: "line-through" }}>{currency.format(couponQuote.originalPrice)}</Typography>}
-                        <Typography fontWeight={900} color={selected ? "primary.main" : "text.primary"}>{currency.format(selected && couponQuote ? couponQuote.monthlyPrice : plan.price)}</Typography>
-                        <Typography variant="caption" color="text.secondary">por mês</Typography>
+                        <Typography fontWeight={900} color={selected ? "primary.main" : "text.primary"}>{currency.format(displayedPrice)}</Typography>
+                        <Typography variant="caption" color="text.secondary">por {form.billingCycle === "ANNUAL" ? "ano" : "mês"}</Typography>
+                        {form.billingCycle === "ANNUAL" && <Typography display="block" variant="caption" color="success.main">equivale a {currency.format(monthlyEquivalent)}/mês</Typography>}
                       </Box>
                     </Stack>
                   </CardActionArea>
                 </Card>;
               })}
             </Stack>
+            {selectedPlan && <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+                <Box flex={1}><Typography fontWeight={800}>Usuários adicionais</Typography><Typography variant="body2" color="text.secondary">O plano {selectedPlan.name} inclui {selectedPlan.includedUsers}. Cada acesso extra custa {currency.format(additionalUserUnitPrice)} por {form.billingCycle === "ANNUAL" ? "ano" : "mês"}.</Typography></Box>
+                <TextField label="Quantidade" type="number" value={form.additionalUserSeats}
+                  onChange={(event) => setAdditionalUserSeats(Number(event.target.value) || 0)}
+                  slotProps={{ htmlInput: { min: 0, max: 100, step: 1 } }} sx={{ width: { sm: 150 } }} />
+              </Stack>
+              <Typography variant="caption" color="primary.main" fontWeight={750}>Limite contratado: {selectedPlan.includedUsers + form.additionalUserSeats} usuário(s) da equipe.</Typography>
+            </Box>}
+            <Alert severity="info" sx={{ mt: 2 }}>WhatsApp avançado, financeiro, nota fiscal, multiunidade e IA serão módulos opcionais. Eles não estão incluídos nem sendo cobrados neste cadastro.</Alert>
             {registrationConfig?.couponEnabled && <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={1.25} alignItems={{ sm: "flex-start" }}>
                 <TextField label="Cupom de desconto" value={form.couponCode} onChange={(event) => {
@@ -228,7 +273,7 @@ export default function RegisterPage() {
               </Stack>
               {couponError && <Alert severity="error" sx={{ mt: 1.5 }}>{couponError}</Alert>}
               {couponQuote?.couponApplied && <Alert severity="success" sx={{ mt: 1.5 }}>
-                Cupom {couponQuote.couponCode} aplicado: {couponQuote.discountPercentage}% de desconto. Mensalidade de {currency.format(couponQuote.monthlyPrice)}.
+                Cupom {couponQuote.couponCode} aplicado: {couponQuote.discountPercentage}% de desconto. Total de {currency.format(couponQuote.price)} por {couponQuote.billingCycle === "ANNUAL" ? "ano" : "mês"}.
               </Alert>}
             </Box>}
             <TextField label="WhatsApp para receber a proposta" required fullWidth value={form.whatsapp} onChange={(event) => set("whatsapp", event.target.value.replace(/\D/g, "").slice(0, 13))} helperText="Informe DDD e número. Nenhuma mensagem real será enviada nesta simulação." slotProps={{ htmlInput: { inputMode: "tel", maxLength: 13 }, input: { startAdornment: <InputAdornment position="start"><WhatsAppIcon color="success" /></InputAdornment> } }} sx={{ mt: 2 }} />
@@ -239,9 +284,9 @@ export default function RegisterPage() {
               {simulation && <Typography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>{simulation.message}</Typography>}
             </Box>
             {registrationConfig?.subscriptionPaymentSimulationEnabled && <Box sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "divider", borderRadius: 2.5 }}>
-              <FormControlLabel control={<Switch checked={form.simulatedPaymentApproved} onChange={(event) => set("simulatedPaymentApproved", event.target.checked)} />} label={<Box><Typography fontWeight={800}>Simular primeira mensalidade paga</Typography><Typography variant="body2" color="text.secondary">Ativado: acesso liberado por 30 dias. Desativado: empresa criada com acesso pendente.</Typography></Box>} sx={{ m: 0, alignItems: "flex-start", gap: 1 }} />
+              <FormControlLabel control={<Switch checked={form.simulatedPaymentApproved} onChange={(event) => set("simulatedPaymentApproved", event.target.checked)} />} label={<Box><Typography fontWeight={800}>Simular primeiro pagamento aprovado</Typography><Typography variant="body2" color="text.secondary">Ativado: acesso liberado por {form.billingCycle === "ANNUAL" ? "365" : "30"} dias. Desativado: empresa criada com acesso pendente.</Typography></Box>} sx={{ m: 0, alignItems: "flex-start", gap: 1 }} />
             </Box>}
-            {registrationConfig && !registrationConfig.subscriptionPaymentSimulationEnabled && <Alert severity="info" sx={{ mt: 2 }}>A simulação de pagamento está desabilitada neste ambiente. A empresa será criada com mensalidade pendente.</Alert>}
+            {registrationConfig && !registrationConfig.subscriptionPaymentSimulationEnabled && <Alert severity="info" sx={{ mt: 2 }}>A simulação de pagamento está desabilitada neste ambiente. A empresa será criada com assinatura pendente.</Alert>}
           </Box>
           <Box><Typography variant="h3" mb={2}>Administrador</Typography>
             <Grid container spacing={2}>

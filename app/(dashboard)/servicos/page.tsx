@@ -22,10 +22,14 @@ export default function ServicesPage() {
     const {can} = useAuth();
     const [items, setItems] = useState<CatalogService[]>([]);
     const [companySettings, setCompanySettings] = useState<CompanySettings>({
-        requireAssets: true, subscriptionPlan: "ESSENTIAL", subscriptionActive: false,
-        subscriptionPaidUntil: null, subscriptionMonthlyPrice: 49.9, couponDiscountPercentage: 0,
-        quoteCalculationMethod: "QUANTITY", defaultSquareMeterPrice: null,
-        defaultCubicMeterPrice: null,
+        requireAssets: true, subscriptionPlan: "SOLO", subscriptionBillingCycle: "MONTHLY",
+        subscriptionActive: false, subscriptionPaidUntil: null, subscriptionPrice: 29.9,
+        couponDiscountPercentage: 0,
+        quoteCalculationMethod: "QUANTITY",
+        enabledQuoteCalculationMethods: ["QUANTITY", "SQUARE_METER", "CUBIC_METER"],
+        defaultSquareMeterPrice: null,
+        defaultCubicMeterPrice: null, includedUserLimit: 1, additionalUserSeats: 0,
+        userLimit: 1, additionalUserMonthlyPrice: 12.9,
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -94,7 +98,9 @@ export default function ServicesPage() {
                         actionLabel={can("SERVICE_CREATE") ? "Novo serviço" : undefined} actionIcon={<AddRoundedIcon/>}
                         onAction={startCreate}/>
             {error && <Box mb={2.5}><ErrorAlert message={error} onRetry={load}/></Box>}
-            {!companySettings.requireAssets && <Alert severity="success" sx={{mb: 2.5}}>A empresa está configurada para não exigir ativos. O cadastro pedirá somente os dados descritivos do serviço.</Alert>}
+            {!companySettings.requireAssets &&
+                <Alert severity="success" sx={{mb: 2.5}}>A empresa está configurada para não exigir ativos. O cadastro
+                    pedirá somente os dados descritivos do serviço.</Alert>}
             <Stack direction={{xs: "column", sm: "row"}} justifyContent="space-between" gap={2} mb={2.5}>
                 <TextField placeholder="Buscar no catálogo" value={search} onChange={(e) => setSearch(e.target.value)}
                            sx={{width: {xs: "100%", sm: 380}}} slotProps={{
@@ -124,9 +130,12 @@ export default function ServicesPage() {
                             color: "primary.main",
                             bgcolor: "primary.main",
                             backgroundColor: "color-mix(in srgb, currentColor 10%, transparent)"
-                        }}><DesignServicesOutlinedIcon/></Box><Stack direction="row" spacing={0.75}><Chip label={service.type === "MAINTENANCE" ? "Manutenção de ativo" : "Serviço sem ativo"} color={service.type === "MAINTENANCE" ? "primary" : "default"} size="small"/><Chip label={service.active ? "Ativo" : "Inativo"}
-                                                                    color={service.active ? "success" : "default"}
-                                                                    size="small"/></Stack></Stack>
+                        }}><DesignServicesOutlinedIcon/></Box><Stack direction="row" spacing={0.75}><Chip
+                            label={service.type === "MAINTENANCE" ? "Manutenção de ativo" : "Serviço sem ativo"}
+                            color={service.type === "MAINTENANCE" ? "primary" : "default"} size="small"/><Chip
+                            label={service.active ? "Ativo" : "Inativo"}
+                            color={service.active ? "success" : "default"}
+                            size="small"/></Stack></Stack>
                         <Typography variant="h3" mt={2.25}>{service.name}</Typography><Typography variant="body2"
                                                                                                   color="text.secondary"
                                                                                                   mt={0.75}
@@ -153,7 +162,13 @@ export default function ServicesPage() {
                            required fullWidth autoFocus/>
                 <TextField label="Descrição" value={form.description}
                            onChange={(e) => set("description", e.target.value)} multiline minRows={3} fullWidth/>
-                {companySettings.requireAssets && <FormControl fullWidth required><InputLabel>Tipo de serviço</InputLabel><Select label="Tipo de serviço" value={form.type} onChange={(e) => set("type", e.target.value)}><MenuItem value="GENERAL">Serviço sem ativo</MenuItem><MenuItem value="MAINTENANCE">Manutenção de ativo</MenuItem></Select><Typography variant="caption" color="text.secondary" mt={0.75}>Manutenções exigem selecionar ou cadastrar o ativo atendido na ordem de serviço.</Typography></FormControl>}
+                {companySettings.requireAssets &&
+                    <FormControl fullWidth required><InputLabel>Tipo de serviço</InputLabel><Select
+                        label="Tipo de serviço" value={form.type}
+                        onChange={(e) => set("type", e.target.value)}><MenuItem value="GENERAL">Serviço sem
+                        ativo</MenuItem><MenuItem value="MAINTENANCE">Manutenção de ativo</MenuItem></Select><Typography
+                        variant="caption" color="text.secondary" mt={0.75}>Manutenções exigem selecionar ou cadastrar o
+                        ativo atendido na ordem de serviço.</Typography></FormControl>}
                 <Stack direction={{xs: "column", sm: "row"}} spacing={2}><TextField label="Preço base" type="number"
                                                                                     value={form.basePrice}
                                                                                     onChange={(e) => set("basePrice", e.target.value)}

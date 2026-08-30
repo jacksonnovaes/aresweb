@@ -6,13 +6,13 @@ import {StatusChip} from "@/components/common/status-chip";
 import {useAuth} from "@/contexts/auth-context";
 import {apiRequest, errorMessage} from "@/lib/api";
 import {formatDate, formatMoney} from "@/lib/format";
-import type {Asset, CatalogService, Customer, ServiceOrder, ServiceOrderStatusDefinition} from "@/lib/types";
+import type {CatalogService, Customer, ServiceOrder, ServiceOrderStatusDefinition} from "@/lib/types";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import BuildCircleOutlinedIcon from "@mui/icons-material/BuildCircleOutlined";
 import DesignServicesOutlinedIcon from "@mui/icons-material/DesignServicesOutlined";
-import DevicesOtherRoundedIcon from "@mui/icons-material/DevicesOtherRounded";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
+import TaskAltRoundedIcon from "@mui/icons-material/TaskAltRounded";
 import TrendingUpRoundedIcon from "@mui/icons-material/TrendingUpRounded";
 import {
     Box, Button, Card, CardContent, Grid, IconButton, LinearProgress, Stack, Table, TableBody,
@@ -23,7 +23,6 @@ import {useCallback, useEffect, useMemo, useState} from "react";
 
 const empty = {
     customers: [] as Customer[],
-    assets: [] as Asset[],
     services: [] as CatalogService[],
     orders: [] as ServiceOrder[],
     statuses: [] as ServiceOrderStatusDefinition[],
@@ -41,13 +40,12 @@ export default function DashboardPage() {
         try {
             const requests = {
                 customers: can("CUSTOMER_READ") ? apiRequest<Customer[]>("/customers") : Promise.resolve([]),
-                assets: can("ASSET_READ") ? apiRequest<Asset[]>("/assets") : Promise.resolve([]),
                 services: can("SERVICE_READ") ? apiRequest<CatalogService[]>("/services") : Promise.resolve([]),
                 orders: can("SERVICE_ORDER_READ") ? apiRequest<ServiceOrder[]>("/service-orders") : Promise.resolve([]),
                 statuses: can("SERVICE_ORDER_READ") ? apiRequest<ServiceOrderStatusDefinition[]>("/service-order-statuses") : Promise.resolve([]),
             };
-            const [customers, assets, services, orders, statuses] = await Promise.all([requests.customers, requests.assets, requests.services, requests.orders, requests.statuses]);
-            setData({customers, assets, services, orders, statuses});
+            const [customers, services, orders, statuses] = await Promise.all([requests.customers, requests.services, requests.orders, requests.statuses]);
+            setData({customers, services, orders, statuses});
         } catch (err) {
             setError(errorMessage(err));
         } finally {
@@ -58,8 +56,9 @@ export default function DashboardPage() {
     useEffect(() => {
         load();
     }, [load]);
+    const completedOrders = data.orders.filter((order) => order.status === "COMPLETED");
     const openOrders = data.orders.filter((order) => !["COMPLETED", "CANCELLED"].includes(order.status));
-    const revenue = data.orders.filter((order) => order.status === "COMPLETED").reduce((sum, order) => sum + Number(order.finalValue ?? order.estimatedValue ?? 0), 0);
+    const revenue = completedOrders.reduce((sum, order) => sum + Number(order.finalValue ?? order.estimatedValue ?? 0), 0);
     const recentOrders = useMemo(() => [...data.orders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 6), [data.orders]);
     const customerMap = useMemo(() => new Map(data.customers.map((item) => [item.id, item.name])), [data.customers]);
     const statusMap = useMemo(() => new Map(data.statuses.map((item) => [item.code, item.name])), [data.statuses]);
@@ -75,16 +74,16 @@ export default function DashboardPage() {
             color: "#2457E6"
         },
         {
-            label: "Ativos cadastrados",
-            value: data.assets.length,
-            helper: "Vinculados aos clientes",
-            icon: <DevicesOtherRoundedIcon/>,
-            color: "#7A5AF8"
+            label: "Ordens concluídas",
+            value: completedOrders.length,
+            helper: `${data.orders.length} ordens no total`,
+            icon: <TaskAltRoundedIcon/>,
+            color: "#16A085"
         },
         {
             label: "Ordens em aberto",
             value: openOrders.length,
-            helper: `${data.orders.filter((item) => item.status === "COMPLETED").length} concluídas`,
+            helper: "Aguardando conclusão",
             icon: <BuildCircleOutlinedIcon/>,
             color: "#E88D14"
         },

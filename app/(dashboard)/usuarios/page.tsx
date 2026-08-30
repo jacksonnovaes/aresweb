@@ -7,7 +7,7 @@ import { QuickCustomerDialog, RelatedCreateButton } from "@/components/quick-cre
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest, errorMessage } from "@/lib/api";
 import { initials } from "@/lib/format";
-import type { Customer, ManagedUser, Permission, Role, UserStatus } from "@/lib/types";
+import type { CompanySettings, Customer, ManagedUser, Permission, Role, UserStatus } from "@/lib/types";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import MoreHorizRoundedIcon from "@mui/icons-material/MoreHorizRounded";
 import {
@@ -26,6 +26,7 @@ export default function UsersPage() {
   const { can } = useAuth();
   const [items, setItems] = useState<ManagedUser[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [companySettings, setCompanySettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
@@ -39,8 +40,12 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true); setError("");
     try {
-      const [usersData, customersData] = await Promise.all([apiRequest<ManagedUser[]>("/users"), apiRequest<Customer[]>("/customers").catch(() => [])]);
-      setItems(usersData); setCustomers(customersData);
+      const [usersData, customersData, settingsData] = await Promise.all([
+        apiRequest<ManagedUser[]>("/users"),
+        apiRequest<Customer[]>("/customers").catch(() => []),
+        apiRequest<CompanySettings>("/company-settings"),
+      ]);
+      setItems(usersData); setCustomers(customersData); setCompanySettings(settingsData);
     } catch (err) { setError(errorMessage(err)); }
     finally { setLoading(false); }
   }, []);
@@ -77,9 +82,16 @@ export default function UsersPage() {
       setItems((current) => current.map((item) => item.id === updated.id ? updated : item));
     } catch (err) { setError(errorMessage(err)); }
   }
+  const occupiedSeats = items.filter((item) => !item.roles.includes("CUSTOMER") && item.status !== "INACTIVE").length;
+  const staffLimitReached = companySettings ? occupiedSeats >= companySettings.userLimit : false;
   return (
     <>
-      <PageHeader eyebrow="Acesso" title="Usuários" description="Gerencie a equipe e crie acessos somente leitura para clientes finais." actionLabel="Novo usuário" actionIcon={<AddRoundedIcon />} onAction={startCreate} />
+      <PageHeader eyebrow="Acesso" title="Usuários" description="Gerencie a equipe e crie acessos somente leitura para clientes finais.">
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
+          {companySettings && <Typography variant="body2" color={staffLimitReached ? "warning.main" : "text.secondary"} fontWeight={750}>{occupiedSeats} de {companySettings.userLimit} acessos da equipe em uso</Typography>}
+          <Button variant="contained" startIcon={<AddRoundedIcon />} onClick={startCreate}>Novo usuário</Button>
+        </Stack>
+      </PageHeader>
       {error && <Box mb={2.5}><ErrorAlert message={error} onRetry={load} /></Box>}
       <Card><TableContainer><Table>
         <TableHead><TableRow><TableCell>Usuário</TableCell><TableCell>Cargo</TableCell><TableCell>Perfis</TableCell><TableCell>Permissões</TableCell><TableCell>Status</TableCell><TableCell align="right">Ações</TableCell></TableRow></TableHead>
@@ -94,6 +106,7 @@ export default function UsersPage() {
         DialogContent dividers>
             <Stack spacing={2.25}>
                 {formError && <Alert severity="error">{formError}</Alert>}
+                {staffLimitReached && !form.roles.includes("CUSTOMER") && <Alert severity="warning">O limite de usuários da equipe foi atingido. Ainda é possível criar um acesso de cliente, ou contratar um usuário adicional.</Alert>}
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                         <TextField label="Nome completo" required value={form.name} onChange={(e) => set("name", e.target.value)} fullWidth autoFocus />
                         <TextField label="E-mail" type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} fullWidth />

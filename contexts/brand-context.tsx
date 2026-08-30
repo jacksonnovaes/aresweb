@@ -19,7 +19,7 @@ const defaults: BrandSettings = {
   logoUrl: "",
   primaryColor: "#2457E6",
   secondaryColor: "#16A085",
-  borderRadius: 8,
+  borderRadius: 12,
 };
 
 interface BrandContextValue {
@@ -109,8 +109,13 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       MuiCard: {
         styleOverrides: { root: { border: "1px solid #E5E9F2", boxShadow: "0 1px 3px rgba(16,24,40,.04)" } },
       },
-      MuiTextField: { defaultProps: { size: "small" } },
-      MuiFormControl: { defaultProps: { size: "small" } },
+      MuiTextField: { defaultProps: { size: "medium" } },
+      MuiFormControl: { defaultProps: { size: "medium" } },
+      MuiOutlinedInput: {
+        styleOverrides: {
+          root: { borderRadius: Math.max(12, brand.borderRadius), minHeight: 54 },
+        },
+      },
       MuiDialog: { styleOverrides: { paper: { backgroundImage: "none" } } },
     },
   }), [brand]);

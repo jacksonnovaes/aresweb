@@ -52,8 +52,8 @@ export default function LoginPage() {
         <AuthShell title="Bem-vindo de volta" subtitle="Entre para continuar gerenciando sua operação.">
             <Box component="form" onSubmit={submit}>
                 <Stack spacing={2.25}>
-                    {registrationStatus === "sucesso" && <Alert severity="success">Empresa criada e primeira mensalidade aprovada. Você já pode entrar.</Alert>}
-                    {registrationStatus === "pendente" && <Alert severity="warning">Empresa criada. O acesso será liberado após a confirmação da mensalidade.</Alert>}
+                    {registrationStatus === "sucesso" && <Alert severity="success">Empresa criada e primeiro pagamento aprovado. Você já pode entrar.</Alert>}
+                    {registrationStatus === "pendente" && <Alert severity="warning">Empresa criada. O acesso será liberado após a confirmação da assinatura.</Alert>}
                     {registrationStatus === "excluida" && <Alert severity="success">A empresa e seus dados operacionais foram excluídos.</Alert>}
                     {error && <Alert severity="error">{error}</Alert>}
                     <TextField label="E-mail" type="email" value={email} onChange={(e) => setEmail(e.target.value)}

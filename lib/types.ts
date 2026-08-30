@@ -65,28 +65,48 @@ export interface Branding {
 export interface CompanySettings {
   requireAssets: boolean;
   subscriptionPlan: SubscriptionPlan;
+  subscriptionBillingCycle: SubscriptionBillingCycle;
   subscriptionActive: boolean;
   subscriptionPaidUntil?: string | null;
-  subscriptionMonthlyPrice: number;
+  subscriptionPrice: number;
   couponCode?: string | null;
   couponDiscountPercentage: number;
   quoteCalculationMethod: QuoteCalculationMethod;
+  enabledQuoteCalculationMethods: QuoteCalculationMethod[];
   defaultSquareMeterPrice?: number | null;
   defaultCubicMeterPrice?: number | null;
+  includedUserLimit: number;
+  additionalUserSeats: number;
+  userLimit: number;
+  additionalUserMonthlyPrice: number;
 }
 
-export type SubscriptionPlan = "ESSENTIAL" | "PROFESSIONAL" | "BUSINESS";
+export type SubscriptionPlan = "SOLO" | "PRO" | "BUSINESS";
+export type SubscriptionBillingCycle = "MONTHLY" | "ANNUAL";
 export type QuoteCalculationMethod = "QUANTITY" | "SQUARE_METER" | "CUBIC_METER";
+
+export interface SubscriptionPlanOption {
+  code: SubscriptionPlan;
+  name: string;
+  monthlyPrice: number;
+  annualPrice: number;
+  includedUsers: number;
+  features: string[];
+}
 
 export interface WhatsAppPlanSimulation {
   deliveryMode: "SIMULATION";
   destination: string;
   plan: SubscriptionPlan;
   planName: string;
+  billingCycle: SubscriptionBillingCycle;
+  additionalUserSeats: number;
+  userLimit: number;
   originalPrice: number;
   discountPercentage: number;
   discountAmount: number;
-  monthlyPrice: number;
+  price: number;
+  monthlyEquivalent: number;
   couponCode?: string | null;
   message: string;
   simulatedAt: string;
@@ -97,6 +117,9 @@ export interface RegistrationConfiguration {
   couponEnabled: boolean;
   termsVersion: string;
   privacyVersion: string;
+  plans: SubscriptionPlanOption[];
+  additionalUserMonthlyPrice: number;
+  additionalUserAnnualPrice: number;
 }
 
 export interface TenantRegistrationResult {
@@ -104,20 +127,28 @@ export interface TenantRegistrationResult {
   userId: string;
   slug: string;
   plan: SubscriptionPlan;
+  billingCycle: SubscriptionBillingCycle;
+  additionalUserSeats: number;
+  userLimit: number;
   subscriptionActive: boolean;
   subscriptionPaidUntil?: string | null;
   originalPrice: number;
   discountPercentage: number;
-  monthlyPrice: number;
+  price: number;
+  monthlyEquivalent: number;
   couponCode?: string | null;
 }
 
 export interface CouponValidation {
   plan: SubscriptionPlan;
+  billingCycle: SubscriptionBillingCycle;
+  additionalUserSeats: number;
+  userLimit: number;
   originalPrice: number;
   discountPercentage: number;
   discountAmount: number;
-  monthlyPrice: number;
+  price: number;
+  monthlyEquivalent: number;
   couponCode: string;
   couponApplied: boolean;
 }
