@@ -290,7 +290,7 @@ export default function CompanySettingsPage() {
                                     }
                                 }}
                                            helperText="Esse preço será sugerido nas novas linhas e poderá ser ajustado no orçamento."/>}
-                            {(settings.enabledQuoteCalculationMethods ?? []).includes("SQUARE_METER") &&
+                            {(settings.enabledQuoteCalculationMethods ?? []).includes("CUBIC_METER") &&
                                 <TextField label="Valor padrão do metro cúbico" type="number"
                                            value={settings.defaultCubicMeterPrice ?? ""} onChange={(event) => {
                                     setSaved(false);

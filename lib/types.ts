@@ -235,6 +235,7 @@ export interface ServiceOrderStatusDefinition {
 export interface ServiceOrderQuoteLine {
   serviceId?: string;
   description: string;
+  notes?: string | null;
   quantity: number;
   unit: string;
   unitPrice: number;

@@ -175,6 +175,7 @@ export default function OrdersPage() {
                     assetId: formRequiresAsset ? form.assetId : null,
                     lines: form.lines.map((line) => ({
                         serviceId: line.serviceId || null, description: line.description,
+                        notes: line.notes || null,
                         quantity: Number(line.quantity), unit: line.unit, unitPrice: Number(line.unitPrice),
                         calculationMethod: line.calculationMethod,
                         widthMeters: line.calculationMethod !== "QUANTITY" ? Number(line.widthMeters) : null,
@@ -280,6 +281,7 @@ export default function OrdersPage() {
                 method: "PUT", body: {
                     assetId: quoteRequiresAsset ? quoteAssetId : null, lines: quoteLines.map((line) => ({
                         serviceId: line.serviceId || null, description: line.description,
+                        notes: line.notes || null,
                         quantity: Number(line.quantity), unit: line.unit, unitPrice: Number(line.unitPrice),
                         calculationMethod: line.calculationMethod,
                         widthMeters: line.calculationMethod !== "QUANTITY" ? Number(line.widthMeters) : null,
@@ -523,7 +525,8 @@ export default function OrdersPage() {
                     const line = {
                         ...emptyQuoteLine(companySettings.quoteCalculationMethod, companySettings.defaultSquareMeterPrice, companySettings.defaultCubicMeterPrice),
                         serviceId: service.id,
-                        description: service.name,
+                        description: service.description?.trim()
+                            ? `${service.name}\n${service.description.trim()}` : service.name,
                         unit: companySettings.quoteCalculationMethod === "SQUARE_METER" ? "M2" : companySettings.quoteCalculationMethod === "CUBIC_METER" ? "M3" : "SERVICO",
                         unitPrice: String(service.basePrice)
                     };

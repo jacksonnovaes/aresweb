@@ -146,7 +146,7 @@ export default function UsersPage() {
                                                                          disabled={saving}>Cancelar</Button><Button
           type="submit" variant="contained"
           disabled={saving}>{saving ? "Criando..." : "Criar usuário"}</Button></DialogActions></Box></Dialog>
-      <QuickCustomerDialog open={quickCustomerOpen} onClose={() => setQuickCustomerOpen(false)}
+      <QuickCustomerDialog open={quickCustomerOpen} onClose={() => setQuickCustomerOpen(false)} allowUserAccess={false}
                            onCreated={(customer) => {
                              setCustomers((current) => [customer, ...current]);
                              set("customerId", customer.id);

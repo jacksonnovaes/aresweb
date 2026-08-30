@@ -13,6 +13,7 @@ import {
 export interface QuoteLineDraft {
   serviceId: string;
   description: string;
+  notes: string;
   quantity: string;
   unit: string;
   unitPrice: string;
@@ -49,6 +50,7 @@ export function emptyQuoteLine(
     ? defaultSquareMeterPrice : calculationMethod === "CUBIC_METER" ? defaultCubicMeterPrice : null;
   return {
     serviceId: "", description: "", quantity: "1",
+    notes: "",
     unit: calculationMethod === "SQUARE_METER" ? "M2" : calculationMethod === "CUBIC_METER" ? "M3" : "UN",
     unitPrice: measured && defaultPrice ? String(defaultPrice) : "",
     calculationMethod, widthMeters: "", lengthMeters: "", heightMeters: "",
@@ -59,6 +61,7 @@ export function storedQuoteLine(line: ServiceOrderQuoteLine): QuoteLineDraft {
   return {
     serviceId: line.serviceId ?? "",
     description: line.description,
+    notes: line.notes ?? "",
     quantity: String(line.quantity),
     unit: line.unit,
     unitPrice: String(line.unitPrice),
@@ -116,7 +119,8 @@ export function QuoteLinesEditor({
     const current = lines[index];
     update(index, service ? {
       serviceId: service.id,
-      description: service.name,
+      description: service.description?.trim()
+        ? `${service.name}\n${service.description.trim()}` : service.name,
       unit: current.calculationMethod === "SQUARE_METER" ? "M2"
         : current.calculationMethod === "CUBIC_METER" ? "M3" : "SERVICO",
       unitPrice: String(service.basePrice),
@@ -157,7 +161,8 @@ export function QuoteLinesEditor({
           </Stack>
           <Grid container spacing={1.5}>
             <Grid size={{ xs: 12, md: 4 }}><FormControl fullWidth><InputLabel>Serviço cadastrado</InputLabel><Select label="Serviço cadastrado" value={line.serviceId} onChange={(event) => selectService(index, event.target.value)}><MenuItem value="">Item personalizado (sem ativo)</MenuItem>{services.filter((service) => service.active).map((service) => <MenuItem value={service.id} key={service.id}>{service.name}{service.type === "MAINTENANCE" ? " • manutenção" : ""}</MenuItem>)}</Select></FormControl></Grid>
-            <Grid size={{ xs: 12, md: 8 }}><TextField label="Descrição da linha" value={line.description} onChange={(event) => update(index, { description: event.target.value })} required fullWidth slotProps={{ htmlInput: { maxLength: 500 } }} /></Grid>
+            <Grid size={{ xs: 12, md: 8 }}><TextField label="Descrição do item/serviço" placeholder="Ex.: Assentamento de piso, incluindo preparação da superfície" value={line.description} onChange={(event) => update(index, { description: event.target.value })} required fullWidth multiline minRows={2} slotProps={{ htmlInput: { maxLength: 500 } }} helperText="Esta descrição será exibida nesta linha da ordem de serviço e na impressão." /></Grid>
+            <Grid size={{ xs: 12 }}><TextField label="Observações do item (opcional)" placeholder="Ex.: Material por conta do cliente, acabamento fosco ou instruções específicas" value={line.notes} onChange={(event) => update(index, { notes: event.target.value })} fullWidth multiline minRows={2} slotProps={{ htmlInput: { maxLength: 1000 } }} helperText="Use para detalhes complementares sem alterar a descrição principal do item." /></Grid>
             <Grid size={{ xs: 12, sm: 6, md: 4 }}><FormControl fullWidth required><InputLabel>Método de cálculo</InputLabel><Select label="Método de cálculo" value={line.calculationMethod} onChange={(event) => changeCalculationMethod(index, event.target.value as QuoteCalculationMethod)}>{methodsForLine(line.calculationMethod).map((method) => <MenuItem value={method.value} key={method.value}>{method.label}</MenuItem>)}</Select></FormControl></Grid>
             {line.calculationMethod !== "QUANTITY" ? <>
               <Grid size={{ xs: 6, sm: 2 }}><TextField label="Largura (m)" type="number" value={line.widthMeters} onChange={(event) => update(index, { widthMeters: event.target.value })} required fullWidth slotProps={{ htmlInput: { min: 0.001, step: 0.001 } }} /></Grid>

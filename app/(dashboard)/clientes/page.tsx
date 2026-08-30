@@ -13,13 +13,16 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
 import {
-  Alert, Avatar, Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, FormControl,
-  IconButton, InputAdornment, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell,
+  Alert, Avatar, Box, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle,
+  FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell,
   TableContainer, TableHead, TableRow, TextField, Tooltip, Typography,
 } from "@mui/material";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
-const blank = { type: "PERSON" as CustomerType, name: "", document: "", email: "", phone: "", notes: "" };
+const blank = {
+  type: "PERSON" as CustomerType, name: "", document: "", email: "", phone: "", notes: "",
+  createUserAccess: false, password: "", confirmation: "",
+};
 
 export default function CustomersPage() {
   const { can } = useAuth();
@@ -48,16 +51,24 @@ export default function CustomersPage() {
 
   function startCreate() { setEditing(null); setForm(blank); setFormError(""); setOpen(true); }
   function startEdit(customer: Customer) {
-    setEditing(customer); setForm({ type: customer.type, name: customer.name, document: customer.document ?? "", email: customer.email ?? "", phone: customer.phone ?? "", notes: customer.notes ?? "" }); setFormError(""); setOpen(true);
+    setEditing(customer); setForm({ ...blank, type: customer.type, name: customer.name, document: customer.document ?? "", email: customer.email ?? "", phone: customer.phone ?? "", notes: customer.notes ?? "" }); setFormError(""); setOpen(true);
   }
-  const set = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
+  const set = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) =>
+    setForm((current) => ({ ...current, [field]: value }));
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); setSaving(true); setFormError("");
+    event.preventDefault(); setFormError("");
+    if (!editing && form.createUserAccess && form.password !== form.confirmation) {
+      return setFormError("A confirmação da senha não confere.");
+    }
+    setSaving(true);
     try {
       const body = editing
         ? { name: form.name, email: form.email || null, phone: form.phone || null, notes: form.notes || null }
-        : { ...form, document: form.document || null, email: form.email || null, phone: form.phone || null, notes: form.notes || null };
+        : { type: form.type, name: form.name, document: form.document || null, email: form.email || null,
+            phone: form.phone || null, notes: form.notes || null, createUserAccess: form.createUserAccess,
+            password: form.createUserAccess ? form.password : null,
+            passwordConfirmation: form.createUserAccess ? form.confirmation : null };
       const saved = await apiRequest<Customer>(editing ? `/customers/${editing.id}` : "/customers", { method: editing ? "PUT" : "POST", body });
       setItems((current) => editing ? current.map((item) => item.id === saved.id ? saved : item) : [saved, ...current]);
       setOpen(false);
@@ -98,7 +109,11 @@ export default function CustomersPage() {
             {!editing && <FormControl fullWidth><InputLabel>Tipo</InputLabel><Select value={form.type} label="Tipo" onChange={(e) => set("type", e.target.value)}><MenuItem value="PERSON">Pessoa física</MenuItem><MenuItem value="COMPANY">Empresa</MenuItem></Select></FormControl>}
             <TextField label={form.type === "COMPANY" ? "Nome da empresa" : "Nome completo"} value={form.name} onChange={(e) => set("name", e.target.value)} required fullWidth autoFocus />
             {!editing && <TextField label={form.type === "COMPANY" ? "CNPJ" : "CPF"} value={form.document} onChange={(e) => set("document", e.target.value)} fullWidth />}
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="E-mail" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} fullWidth /><TextField label="Telefone" value={form.phone} onChange={(e) => set("phone", e.target.value)} fullWidth /></Stack>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="E-mail" type="email" value={form.email} onChange={(e) => set("email", e.target.value)} required={!editing && form.createUserAccess} fullWidth /><TextField label="Telefone" value={form.phone} onChange={(e) => set("phone", e.target.value)} fullWidth /></Stack>
+            {!editing && can("USER_MANAGE") && <>
+              <FormControlLabel control={<Checkbox checked={form.createUserAccess} onChange={(event) => set("createUserAccess", event.target.checked)} />} label={<Box><Typography fontWeight={750}>Também cadastrar como usuário</Typography><Typography variant="body2" color="text.secondary">Cria um acesso ao portal para o cliente acompanhar somente as próprias ordens.</Typography></Box>} sx={{ alignItems: "flex-start", m: 0 }} />
+              {form.createUserAccess && <><Alert severity="info">O e-mail será o login e este usuário não ocupará uma vaga da equipe.</Alert><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="Senha inicial" type="password" value={form.password} onChange={(event) => set("password", event.target.value)} required fullWidth autoComplete="new-password" /><TextField label="Confirmar senha" type="password" value={form.confirmation} onChange={(event) => set("confirmation", event.target.value)} required fullWidth autoComplete="new-password" /></Stack></>}
+            </>}
             <TextField label="Observações" value={form.notes} onChange={(e) => set("notes", e.target.value)} multiline minRows={3} fullWidth />
           </Stack></DialogContent>
           <DialogActions sx={{ p: 2.5 }}><Button onClick={() => setOpen(false)} disabled={saving}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? "Salvando..." : "Salvar cliente"}</Button></DialogActions>

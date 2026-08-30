@@ -1,11 +1,12 @@
 "use client";
 
 import { apiRequest, errorMessage } from "@/lib/api";
+import { useAuth } from "@/contexts/auth-context";
 import type { Asset, AssetType, AssetTypeDefinition, CatalogService, CatalogServiceType, Customer, CustomerType, ManagedUser } from "@/lib/types";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import {
-  Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl,
-  InputAdornment, InputLabel, MenuItem, Select, Stack, TextField, Typography,
+  Alert, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, FormControl,
+  FormControlLabel, InputAdornment, InputLabel, MenuItem, Select, Stack, TextField, Typography,
 } from "@mui/material";
 import { FormEvent, useEffect, useState } from "react";
 
@@ -24,21 +25,33 @@ export function RelatedCreateButton({ label, onClick, disabled = false }: { labe
   );
 }
 
-const customerInitial = { type: "PERSON" as CustomerType, name: "", document: "", email: "", phone: "", notes: "" };
+const customerInitial = {
+  type: "PERSON" as CustomerType, name: "", document: "", email: "", phone: "", notes: "",
+  createUserAccess: false, password: "", confirmation: "",
+};
 
-export function QuickCustomerDialog({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: (customer: Customer) => void }) {
+export function QuickCustomerDialog({ open, onClose, onCreated, allowUserAccess = true }: { open: boolean; onClose: () => void; onCreated: (customer: Customer) => void; allowUserAccess?: boolean }) {
+  const { can } = useAuth();
   const [form, setForm] = useState(customerInitial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => { if (open) { setForm(customerInitial); setError(""); } }, [open]);
-  const set = (field: keyof typeof form, value: string) => setForm((current) => ({ ...current, [field]: value }));
+  const set = <K extends keyof typeof form>(field: K, value: (typeof form)[K]) =>
+    setForm((current) => ({ ...current, [field]: value }));
 
   async function submit(event: FormEvent) {
-    event.preventDefault(); event.stopPropagation(); setSaving(true); setError("");
+    event.preventDefault(); event.stopPropagation(); setError("");
+    if (form.createUserAccess && form.password !== form.confirmation) {
+      return setError("A confirmação da senha não confere.");
+    }
+    setSaving(true);
     try {
       const created = await apiRequest<Customer>("/customers", { method: "POST", body: {
         type: form.type, name: form.name, document: form.document || null, email: form.email || null,
         phone: form.phone || null, notes: form.notes || null,
+        createUserAccess: form.createUserAccess,
+        password: form.createUserAccess ? form.password : null,
+        passwordConfirmation: form.createUserAccess ? form.confirmation : null,
       } });
       onCreated(created); onClose();
     } catch (err) { setError(errorMessage(err)); }
@@ -54,7 +67,11 @@ export function QuickCustomerDialog({ open, onClose, onCreated }: { open: boolea
           <FormControl fullWidth><InputLabel>Tipo</InputLabel><Select value={form.type} label="Tipo" onChange={(event) => set("type", event.target.value)}><MenuItem value="PERSON">Pessoa física</MenuItem><MenuItem value="COMPANY">Empresa</MenuItem></Select></FormControl>
           <TextField label={form.type === "COMPANY" ? "Nome da empresa" : "Nome completo"} value={form.name} onChange={(event) => set("name", event.target.value)} required fullWidth autoFocus />
           <TextField label={form.type === "COMPANY" ? "CNPJ" : "CPF"} value={form.document} onChange={(event) => set("document", event.target.value)} fullWidth />
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="E-mail" type="email" value={form.email} onChange={(event) => set("email", event.target.value)} fullWidth /><TextField label="Telefone" value={form.phone} onChange={(event) => set("phone", event.target.value)} fullWidth /></Stack>
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="E-mail" type="email" value={form.email} onChange={(event) => set("email", event.target.value)} required={form.createUserAccess} fullWidth /><TextField label="Telefone" value={form.phone} onChange={(event) => set("phone", event.target.value)} fullWidth /></Stack>
+          {allowUserAccess && can("USER_MANAGE") && <>
+            <FormControlLabel control={<Checkbox checked={form.createUserAccess} onChange={(event) => set("createUserAccess", event.target.checked)} />} label={<Box><Typography fontWeight={750}>Criar acesso de usuário para este cliente</Typography><Typography variant="body2" color="text.secondary">O cliente poderá entrar no portal e acompanhar somente as próprias ordens.</Typography></Box>} sx={{ alignItems: "flex-start", m: 0 }} />
+            {form.createUserAccess && <><Alert severity="info">O e-mail será usado no login. Este acesso não consome uma vaga da equipe.</Alert><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="Senha inicial" type="password" value={form.password} onChange={(event) => set("password", event.target.value)} required fullWidth autoComplete="new-password" /><TextField label="Confirmar senha" type="password" value={form.confirmation} onChange={(event) => set("confirmation", event.target.value)} required fullWidth autoComplete="new-password" /></Stack></>}
+          </>}
           <TextField label="Observações" value={form.notes} onChange={(event) => set("notes", event.target.value)} multiline minRows={2} fullWidth />
         </Stack></DialogContent>
         <DialogActions sx={{ p: 2.5 }}><Button type="button" onClick={onClose} disabled={saving}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? "Salvando..." : "Cadastrar e selecionar"}</Button></DialogActions>

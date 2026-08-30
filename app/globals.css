@@ -105,6 +105,18 @@ select {
     break-inside: avoid;
   }
 
+  .service-order-print,
+  .service-order-print-logo {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .service-order-print-logo {
+    display: block !important;
+    max-width: 72px !important;
+    max-height: 72px !important;
+  }
+
   .print-hide {
     display: none !important;
   }
