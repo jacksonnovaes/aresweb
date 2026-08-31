@@ -215,7 +215,7 @@ export default function RegisterPage() {
               <Grid size={{ xs: 12, sm: 7 }}><TextField label="Nome da marca" required fullWidth value={form.tradeName} onChange={(e) => setTradeName(e.target.value)} /></Grid>
               <Grid size={{ xs: 12, sm: 5 }}><TextField label="CPF/CNPJ" required fullWidth value={form.document} onChange={(e) => set("document", e.target.value.replace(/\D/g, "").slice(0, 14))} helperText="Somente números: 11 dígitos para CPF ou 14 para CNPJ." slotProps={{ htmlInput: { inputMode: "numeric", maxLength: 14 } }} /></Grid>
               <Grid size={{ xs: 12 }}><TextField label="Identificador da empresa" helperText="Apenas letras minúsculas, números e hífens." required fullWidth value={form.slug} onChange={(e) => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} /></Grid>
-              <Grid size={{ xs: 12 }}><TextField label="Endereço da empresa" helperText="av euclides n 1232 bairro dois SP" required fullWidth value={form.address} onChange={(e) => set("slug", e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))} /></Grid>
+              <Grid size={{ xs: 12 }}><TextField label="Endereço da empresa" helperText="av euclides n 1232 bairro dois SP" required fullWidth value={form.address} onChange={(e) => set("address", e.target.value)} /></Grid>
             </Grid>
           </Box>
           <Box><Typography variant="h3" mb={2}>Identidade visual</Typography>
