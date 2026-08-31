@@ -42,6 +42,7 @@ const initial: RegistrationForm = {
   legalName: "", tradeName: "", slug: "", document: "", logoUrl: "", primaryColor: "#2457E6",
   plan: "PRO", billingCycle: "MONTHLY", additionalUserSeats: 0,
   whatsapp: "", couponCode: "", simulatedPaymentApproved: false,
+  address:"",
   legalAccepted: false,
   adminName: "", email: "", password: "", confirmation: "",
 };

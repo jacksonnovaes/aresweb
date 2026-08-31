@@ -94,7 +94,7 @@ export default function CustomersPage() {
             type: customer.type,
             name: customer.name,
             document: customer.document ?? "",
-            address: form.address || null,
+            address: form.address || "",
             email: customer.email ?? "",
             phone: customer.phone ?? "",
             notes: customer.notes ?? ""
