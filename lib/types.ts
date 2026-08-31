@@ -169,6 +169,7 @@ export interface Customer {
   document?: string;
   email?: string;
   phone?: string;
+  address?: string;
   notes?: string;
   status: CustomerStatus;
   createdAt: string;
@@ -252,7 +253,6 @@ export interface ServiceOrder {
   tenantId: string;
   customerId: string;
   assetId?: string;
-  address: string;
   serviceIds: string[];
   quoteLines: ServiceOrderQuoteLine[];
   title: string;
@@ -299,6 +299,7 @@ export interface ServiceOrderDocument {
     document?: string;
     email?: string;
     phone?: string;
+    address?: string;
   };
   asset?: {
     id: string;
@@ -327,7 +328,6 @@ export interface CustomerServiceOrder {
   quoteLines: ServiceOrderQuoteLine[];
   title: string;
   description?: string;
-  address: string;
   status: ServiceOrderStatus;
   statusName: string;
   priority: ServiceOrderPriority;

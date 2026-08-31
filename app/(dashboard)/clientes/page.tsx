@@ -77,7 +77,8 @@ export default function CustomersPage() {
 
     const filtered = useMemo(() => {
         const term = search.toLowerCase();
-        return items.filter((item) => [item.name, item.email, item.document, item.phone].some((value) => value?.toLowerCase().includes(term)));
+        return items.filter((item) => [item.name, item.email, item.document, item.phone, item.address]
+            .some((value) => value?.toLowerCase().includes(term)));
     }, [items, search]);
 
     function startCreate() {
@@ -94,7 +95,7 @@ export default function CustomersPage() {
             type: customer.type,
             name: customer.name,
             document: customer.document ?? "",
-            address: form.address || "",
+            address: customer.address ?? "",
             email: customer.email ?? "",
             phone: customer.phone ?? "",
             notes: customer.notes ?? ""
@@ -115,11 +116,12 @@ export default function CustomersPage() {
         setSaving(true);
         try {
             const body = editing
-                ? {name: form.name, email: form.email || null, phone: form.phone || null, notes: form.notes || null}
+                ? {name: form.name, email: form.email || null, phone: form.phone || null,
+                    address: form.address, notes: form.notes || null}
                 : {
                     type: form.type, name: form.name, document: form.document || null, email: form.email || null,
                     phone: form.phone || null, notes: form.notes || null, createUserAccess: form.createUserAccess,
-                    address: form.address || null,
+                    address: form.address,
                     password: form.createUserAccess ? form.password : null,
                     passwordConfirmation: form.createUserAccess ? form.confirmation : null
                 };
@@ -211,8 +213,10 @@ export default function CustomersPage() {
                         {!editing && <TextField label={form.type === "COMPANY" ? "CNPJ" : "CPF"} value={form.document}
                                                 onChange={(e) => set("document", e.target.value)} fullWidth/>}
 
-                        <TextField label="Endereço" value={form.address} onChange={(e) => set("address", e.target.value)}
-                                   multiline fullWidth/>
+                        <TextField label="Endereço completo" value={form.address}
+                                   placeholder="Rua, número, complemento, bairro, cidade/UF e CEP"
+                                   onChange={(e) => set("address", e.target.value)} required multiline minRows={2}
+                                   fullWidth slotProps={{htmlInput: {maxLength: 500}}}/>
                         <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
 
                             <TextField label="E-mail" type="email"

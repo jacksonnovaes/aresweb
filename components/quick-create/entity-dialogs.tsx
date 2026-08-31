@@ -47,7 +47,7 @@ export function QuickCustomerDialog({ open, onClose, onCreated, allowUserAccess 
     setSaving(true);
     try {
       const created = await apiRequest<Customer>("/customers", { method: "POST", body: {
-        type: form.type, name: form.name, document: form.document || null, email: form.email || null, address: form.address || null,
+        type: form.type, name: form.name, document: form.document || null, email: form.email || null, address: form.address,
         phone: form.phone || null, notes: form.notes || null,
         createUserAccess: form.createUserAccess,
         password: form.createUserAccess ? form.password : null,
@@ -73,10 +73,10 @@ export function QuickCustomerDialog({ open, onClose, onCreated, allowUserAccess 
                        onChange={(event) => set("name", event.target.value)} required fullWidth autoFocus/>
             <TextField label={form.type === "COMPANY" ? "CNPJ" : "CPF"} value={form.document}
                        onChange={(event) => set("document", event.target.value)} fullWidth/>
-            <TextField label="Endereço" type="text" value={form.address}
-                       onChange={(event) => set("address", event.target.value)}
-                       required={form.createUserAccess}
-                       fullWidth/>
+            <TextField label="Endereço completo" value={form.address}
+                       placeholder="Rua, número, complemento, bairro, cidade/UF e CEP"
+                       onChange={(event) => set("address", event.target.value)} required multiline minRows={2}
+                       fullWidth slotProps={{htmlInput: {maxLength: 500}}}/>
             <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
               <TextField label="E-mail" type="email" value={form.email}
                          onChange={(event) => set("email", event.target.value)}
