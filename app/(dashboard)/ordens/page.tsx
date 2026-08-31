@@ -360,9 +360,11 @@ export default function OrdersPage() {
                                     fontSize="small"/></IconButton></Tooltip>}<Tooltip
                                 title="Imprimir ordem"><IconButton size="small"
                                                                    aria-label={`Imprimir ordem ${order.title}`}
-                                                                   onClick={() => startPrint(order)}><PrintOutlinedIcon
+                                                                   onClick={() => startPrint(order)}>
+                                <PrintOutlinedIcon
                                 fontSize="small"/></IconButton></Tooltip>{can("SERVICE_ORDER_UPDATE") &&
-                                <Tooltip title="Enviar por e-mail (simulação)"><IconButton size="small"
+                                <Tooltip title="Enviar por e-mail (simulação)">
+                                    <IconButton size="small"
                                                                                            aria-label={`Enviar ordem ${order.title} por e-mail`}
                                                                                            onClick={() => startEmail(order)}><EmailOutlinedIcon
                                     fontSize="small"/></IconButton></Tooltip>}</Stack></TableCell>

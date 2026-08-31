@@ -26,7 +26,7 @@ export function RelatedCreateButton({ label, onClick, disabled = false }: { labe
 }
 
 const customerInitial = {
-  type: "PERSON" as CustomerType, name: "", document: "", email: "", phone: "", notes: "",
+  type: "PERSON" as CustomerType, name: "", document: "", email: "", phone: "", notes: "", address: "",
   createUserAccess: false, password: "", confirmation: "",
 };
 
@@ -47,7 +47,7 @@ export function QuickCustomerDialog({ open, onClose, onCreated, allowUserAccess 
     setSaving(true);
     try {
       const created = await apiRequest<Customer>("/customers", { method: "POST", body: {
-        type: form.type, name: form.name, document: form.document || null, email: form.email || null,
+        type: form.type, name: form.name, document: form.document || null, email: form.email || null, address: form.address || null,
         phone: form.phone || null, notes: form.notes || null,
         createUserAccess: form.createUserAccess,
         password: form.createUserAccess ? form.password : null,
@@ -59,24 +59,60 @@ export function QuickCustomerDialog({ open, onClose, onCreated, allowUserAccess 
   }
 
   return (
-    <Dialog open={open} onClose={() => !saving && onClose()} fullWidth maxWidth="sm">
-      <Box component="form" onSubmit={submit}>
-        <DialogTitle>Cadastro rápido de cliente<Typography variant="body2" color="text.secondary" mt={0.5}>Ao salvar, o novo cliente será selecionado automaticamente.</Typography></DialogTitle>
-        <DialogContent dividers><Stack spacing={2.25}>
-          {error && <Alert severity="error">{error}</Alert>}
-          <FormControl fullWidth><InputLabel>Tipo</InputLabel><Select value={form.type} label="Tipo" onChange={(event) => set("type", event.target.value)}><MenuItem value="PERSON">Pessoa física</MenuItem><MenuItem value="COMPANY">Empresa</MenuItem></Select></FormControl>
-          <TextField label={form.type === "COMPANY" ? "Nome da empresa" : "Nome completo"} value={form.name} onChange={(event) => set("name", event.target.value)} required fullWidth autoFocus />
-          <TextField label={form.type === "COMPANY" ? "CNPJ" : "CPF"} value={form.document} onChange={(event) => set("document", event.target.value)} fullWidth />
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="E-mail" type="email" value={form.email} onChange={(event) => set("email", event.target.value)} required={form.createUserAccess} fullWidth /><TextField label="Telefone" value={form.phone} onChange={(event) => set("phone", event.target.value)} fullWidth /></Stack>
-          {allowUserAccess && can("USER_MANAGE") && <>
-            <FormControlLabel control={<Checkbox checked={form.createUserAccess} onChange={(event) => set("createUserAccess", event.target.checked)} />} label={<Box><Typography fontWeight={750}>Criar acesso de usuário para este cliente</Typography><Typography variant="body2" color="text.secondary">O cliente poderá entrar no portal e acompanhar somente as próprias ordens.</Typography></Box>} sx={{ alignItems: "flex-start", m: 0 }} />
-            {form.createUserAccess && <><Alert severity="info">O e-mail será usado no login. Este acesso não consome uma vaga da equipe.</Alert><Stack direction={{ xs: "column", sm: "row" }} spacing={2}><TextField label="Senha inicial" type="password" value={form.password} onChange={(event) => set("password", event.target.value)} required fullWidth autoComplete="new-password" /><TextField label="Confirmar senha" type="password" value={form.confirmation} onChange={(event) => set("confirmation", event.target.value)} required fullWidth autoComplete="new-password" /></Stack></>}
-          </>}
-          <TextField label="Observações" value={form.notes} onChange={(event) => set("notes", event.target.value)} multiline minRows={2} fullWidth />
-        </Stack></DialogContent>
-        <DialogActions sx={{ p: 2.5 }}><Button type="button" onClick={onClose} disabled={saving}>Cancelar</Button><Button type="submit" variant="contained" disabled={saving}>{saving ? "Salvando..." : "Cadastrar e selecionar"}</Button></DialogActions>
-      </Box>
-    </Dialog>
+      <Dialog open={open} onClose={() => !saving && onClose()} fullWidth maxWidth="sm">
+        <Box component="form" onSubmit={submit}>
+          <DialogTitle>Cadastro rápido de cliente<Typography variant="body2" color="text.secondary" mt={0.5}>Ao salvar,
+            o novo cliente será selecionado automaticamente.</Typography></DialogTitle>
+          <DialogContent dividers><Stack spacing={2.25}>
+            {error && <Alert severity="error">{error}</Alert>}
+            <FormControl fullWidth><InputLabel>Tipo</InputLabel><Select value={form.type} label="Tipo"
+                                                                        onChange={(event) => set("type", event.target.value)}><MenuItem
+                value="PERSON">Pessoa física</MenuItem><MenuItem
+                value="COMPANY">Empresa</MenuItem></Select></FormControl>
+            <TextField label={form.type === "COMPANY" ? "Nome da empresa" : "Nome completo"} value={form.name}
+                       onChange={(event) => set("name", event.target.value)} required fullWidth autoFocus/>
+            <TextField label={form.type === "COMPANY" ? "CNPJ" : "CPF"} value={form.document}
+                       onChange={(event) => set("document", event.target.value)} fullWidth/>
+            <TextField label="Endereço" type="text" value={form.address}
+                       onChange={(event) => set("address", event.target.value)}
+                       required={form.createUserAccess}
+                       fullWidth/>
+            <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
+              <TextField label="E-mail" type="email" value={form.email}
+                         onChange={(event) => set("email", event.target.value)}
+                         required={form.createUserAccess}
+                         fullWidth/>
+              <TextField label="Telefone"
+                         value={form.phone}
+                         onChange={(event) => set("phone", event.target.value)}
+                         fullWidth/></Stack>
+            {allowUserAccess && can("USER_MANAGE") && <>
+              <FormControlLabel control={
+                <Checkbox checked={form.createUserAccess}
+                          onChange={(event) => set("createUserAccess", event.target.checked)}/>}
+                                label={<Box><Typography fontWeight={750}>Criar acesso de usuário para este
+                                  cliente</Typography><Typography variant="body2" color="text.secondary">O cliente
+                                  poderá entrar no portal e acompanhar somente as próprias ordens.</Typography></Box>}
+                                sx={{alignItems: "flex-start", m: 0}}/>
+              {form.createUserAccess && <><Alert severity="info">O e-mail será usado no login. Este acesso não consome uma vaga da equipe.</Alert>
+                <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
+                  <TextField label="Senha inicial" type="password" value={form.password}
+                             onChange={(event) => set("password", event.target.value)} required fullWidth
+                             autoComplete="new-password"/>
+                  <TextField label="Confirmar senha" type="password"
+                             value={form.confirmation}
+                             onChange={(event) => set("confirmation", event.target.value)}
+                             required fullWidth autoComplete="new-password"/></Stack></>}
+            </>}
+            <TextField label="Observações" value={form.notes} onChange={(event) => set("notes", event.target.value)}
+                       multiline minRows={2} fullWidth/>
+          </Stack></DialogContent>
+          <DialogActions sx={{p: 2.5}}><Button type="button" onClick={onClose}
+                                               disabled={saving}>Cancelar</Button><Button type="submit"
+                                                                                          variant="contained"
+                                                                                          disabled={saving}>{saving ? "Salvando..." : "Cadastrar e selecionar"}</Button></DialogActions>
+        </Box>
+      </Dialog>
   );
 }
 

@@ -94,6 +94,7 @@ export default function CustomersPage() {
             type: customer.type,
             name: customer.name,
             document: customer.document ?? "",
+            address: form.address || null,
             email: customer.email ?? "",
             phone: customer.phone ?? "",
             notes: customer.notes ?? ""
@@ -118,6 +119,7 @@ export default function CustomersPage() {
                 : {
                     type: form.type, name: form.name, document: form.document || null, email: form.email || null,
                     phone: form.phone || null, notes: form.notes || null, createUserAccess: form.createUserAccess,
+                    address: form.address || null,
                     password: form.createUserAccess ? form.password : null,
                     passwordConfirmation: form.createUserAccess ? form.confirmation : null
                 };
@@ -192,7 +194,8 @@ export default function CustomersPage() {
             </Card>
             <Dialog open={open} onClose={() => !saving && setOpen(false)} fullWidth maxWidth="sm">
                 <Box component="form" onSubmit={submit}>
-                    <DialogTitle>{editing ? "Editar cliente" : "Novo cliente"}<Typography variant="body2"
+                    <DialogTitle>{editing ? "Editar cliente" : "Novo cliente"}
+                        <Typography variant="body2"
                                                                                           color="text.secondary"
                                                                                           mt={0.5}>{editing ? "Atualize os dados de contato." : "Adicione uma pessoa ou empresa à sua base."}</Typography></DialogTitle>
                     <DialogContent dividers><Stack spacing={2.25}>
@@ -213,10 +216,10 @@ export default function CustomersPage() {
                         <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
 
                             <TextField label="E-mail" type="email"
-                                                                                            value={form.email}
-                                                                                            onChange={(e) => set("email", e.target.value)}
-                                                                                            required={!editing && form.createUserAccess}
-                                                                                            fullWidth/>
+                                       value={form.email}
+                                       onChange={(e) => set("email", e.target.value)}
+                                       required={!editing && form.createUserAccess}
+                                       fullWidth/>
                             <TextField label="Telefone" value={form.phone} onChange={(e) => set("phone", e.target.value)} fullWidth/>
 
                         </Stack>

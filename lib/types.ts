@@ -252,6 +252,7 @@ export interface ServiceOrder {
   tenantId: string;
   customerId: string;
   assetId?: string;
+  address: string;
   serviceIds: string[];
   quoteLines: ServiceOrderQuoteLine[];
   title: string;
@@ -326,6 +327,7 @@ export interface CustomerServiceOrder {
   quoteLines: ServiceOrderQuoteLine[];
   title: string;
   description?: string;
+  address: string;
   status: ServiceOrderStatus;
   statusName: string;
   priority: ServiceOrderPriority;
