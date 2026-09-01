@@ -62,6 +62,73 @@ export interface Branding {
   primaryColor?: string | null;
 }
 
+export interface PublicProfileSettings {
+  enabled: boolean;
+  slug: string;
+  tradeName: string;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+  headline?: string | null;
+  description?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  city?: string | null;
+  serviceArea?: string | null;
+  showPrices: boolean;
+  serviceSource: PublicServiceSource;
+  manualServices: PublicProfileManualService[];
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+  logoPath?: string | null;
+  backgroundImagePath?: string | null;
+  showLogo: boolean;
+  backgroundOverlayPercentage: number;
+}
+
+export type PublicServiceSource = "CATALOG" | "MANUAL";
+
+export interface PublicProfileManualService {
+  name: string;
+  description?: string | null;
+  basePrice?: number | null;
+}
+
+export interface PublicProfileMediaUpload {
+  kind: "LOGO" | "BACKGROUND";
+  path: string;
+}
+
+export interface PublicProfileService {
+  name: string;
+  description?: string | null;
+  basePrice?: number | null;
+  estimatedMinutes?: number | null;
+}
+
+export interface PublicProfile {
+  slug: string;
+  tradeName: string;
+  logoUrl?: string | null;
+  primaryColor?: string | null;
+  headline: string;
+  description: string;
+  whatsapp: string;
+  email?: string | null;
+  city?: string | null;
+  serviceArea?: string | null;
+  showPrices: boolean;
+  serviceSource: PublicServiceSource;
+  accentColor: string;
+  backgroundColor: string;
+  textColor: string;
+  logoPath?: string | null;
+  backgroundImagePath?: string | null;
+  showLogo: boolean;
+  backgroundOverlayPercentage: number;
+  services: PublicProfileService[];
+}
+
 export interface CompanySettings {
   requireAssets: boolean;
   subscriptionPlan: SubscriptionPlan;

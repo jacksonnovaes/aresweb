@@ -12,6 +12,7 @@ import DevicesOtherRoundedIcon from "@mui/icons-material/DevicesOtherRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import MenuRoundedIcon from "@mui/icons-material/MenuRounded";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
+import PublicRoundedIcon from "@mui/icons-material/PublicRounded";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
@@ -33,6 +34,7 @@ const items: { label: string; href: string; icon: React.ReactNode; permission?: 
   { label: "Ordens de serviço", href: "/ordens", icon: <BuildCircleOutlinedIcon />, permission: "SERVICE_ORDER_READ" },
   { label: "Usuários", href: "/usuarios", icon: <PersonOutlineRoundedIcon />, permission: "USER_MANAGE" },
   { label: "Configuração da empresa", href: "/configuracoes", icon: <SettingsOutlinedIcon />, permission: "TENANT_CONFIGURE" },
+  { label: "Página pública", href: "/pagina-publica", icon: <PublicRoundedIcon />, permission: "TENANT_CONFIGURE" },
   { label: "Aparência", href: "/aparencia", icon: <PaletteOutlinedIcon /> },
 ];
 

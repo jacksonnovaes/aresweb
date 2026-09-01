@@ -11,6 +11,10 @@ const allowedPaths = [
   /^auth\/(login|refresh|logout|forgot-password|reset-password|change-password|me)$/,
   /^branding$/,
   /^company-settings$/,
+  /^public-profile-settings$/,
+  /^public-profile-media\/(?:LOGO|BACKGROUND)$/,
+  /^public\/profiles\/[a-z0-9]+(?:-[a-z0-9]+)*$/,
+  /^public\/media\/[0-9a-f-]{36}\/(?:logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i,
   /^tenants\/(register|registration-config|plan-whatsapp-simulation)$/,
   /^tenants\/coupon-validation$/,
   /^users(?:\/[0-9a-f-]+\/status)?$/i,
@@ -34,6 +38,12 @@ const publicPaths = new Set([
   "tenants/coupon-validation",
 ]);
 
+function isPublicPath(path: string) {
+  return publicPaths.has(path)
+    || /^public\/profiles\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path)
+    || /^public\/media\/[0-9a-f-]{36}\/(?:logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i.test(path);
+}
+
 function cookieOptions(maxAge: number) {
   return {
     httpOnly: true,
@@ -48,7 +58,7 @@ async function upstream(
   request: NextRequest,
   path: string,
   accessToken?: string,
-  overrideBody?: string,
+  overrideBody?: BodyInit,
 ) {
   const target = new URL(`${API_URL}/api/v1/${path}`);
   request.nextUrl.searchParams.forEach((value, key) => target.searchParams.append(key, value));
@@ -62,7 +72,7 @@ async function upstream(
   return fetch(target, {
     method: request.method,
     headers,
-    body: body || undefined,
+    body: body ?? undefined,
     cache: "no-store",
   });
 }
@@ -95,8 +105,11 @@ async function proxyHandler(request: NextRequest, context: RouteContext) {
   }
 
   const contentLength = Number(request.headers.get("content-length") ?? 0);
-  if (contentLength > 1024 * 1024) {
-    return NextResponse.json({ detail: "A requisição excede o limite de 1 MB." }, { status: 413 });
+  const mediaUpload = path.startsWith("public-profile-media/");
+  const contentLimit = mediaUpload ? 6 * 1024 * 1024 : 1024 * 1024;
+  if (contentLength > contentLimit) {
+    return NextResponse.json({ detail: mediaUpload ? "A imagem excede o limite de 5 MB."
+      : "A requisição excede o limite de 1 MB." }, { status: 413 });
   }
 
   const cookieStore = await cookies();
@@ -118,13 +131,15 @@ async function proxyHandler(request: NextRequest, context: RouteContext) {
     return authResponse(await upstream(request, path, undefined, JSON.stringify({ refreshToken })));
   }
 
-  const originalBody = !["GET", "HEAD"].includes(request.method) ? await request.text() : undefined;
-  const isPublicPath = publicPaths.has(path);
-  let response = await upstream(request, path, isPublicPath ? undefined : accessToken, originalBody);
+  const originalBody = !["GET", "HEAD"].includes(request.method)
+    ? mediaUpload ? await request.arrayBuffer() : await request.text()
+    : undefined;
+  const publicRequest = isPublicPath(path);
+  let response = await upstream(request, path, publicRequest ? undefined : accessToken, originalBody);
 
   if (path === "auth/login") return authResponse(response);
 
-  if (isPublicPath) return copyResponse(response);
+  if (publicRequest) return copyResponse(response);
 
   if (path === "privacy/account" && response.ok) {
     const result = await copyResponse(response);
