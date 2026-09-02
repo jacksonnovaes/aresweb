@@ -60,6 +60,16 @@ export interface Branding {
   slug: string;
   logoUrl?: string | null;
   primaryColor?: string | null;
+  secondaryColor?: string | null;
+  borderRadius?: number | null;
+}
+
+export interface AppearanceSettings {
+  tradeName: string;
+  logoUrl?: string | null;
+  primaryColor: string;
+  secondaryColor: string;
+  borderRadius: number;
 }
 
 export interface PublicProfileSettings {

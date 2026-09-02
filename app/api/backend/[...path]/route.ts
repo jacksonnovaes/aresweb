@@ -10,6 +10,7 @@ type RouteContext = { params: Promise<{ path: string[] }> };
 const allowedPaths = [
   /^auth\/(login|refresh|logout|forgot-password|reset-password|change-password|me)$/,
   /^branding$/,
+  /^appearance-settings$/,
   /^company-settings$/,
   /^public-profile-settings$/,
   /^public-profile-media\/(?:BRAND|PROFILE|LOGO|BACKGROUND)$/,

@@ -3,7 +3,7 @@
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
 import { publicMediaUrl } from "@/lib/public-profile";
-import type { Branding } from "@/lib/types";
+import type { AppearanceSettings, Branding } from "@/lib/types";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
@@ -26,16 +26,12 @@ const defaults: BrandSettings = {
 interface BrandContextValue {
   brand: BrandSettings;
   remoteBrand: Branding | null;
-  saveBrand: (settings: BrandSettings) => void;
+  saveBrand: (settings: BrandSettings) => Promise<BrandSettings>;
   restoreRemoteBrand: () => void;
   loadBranding: (slug: string) => Promise<void>;
 }
 
 const BrandContext = createContext<BrandContextValue | null>(null);
-
-function storageKey(slug?: string) {
-  return `ares.brand.${slug || "default"}`;
-}
 
 function fromRemote(remote: Branding): BrandSettings {
   return {
@@ -43,6 +39,18 @@ function fromRemote(remote: Branding): BrandSettings {
     tradeName: remote.tradeName || defaults.tradeName,
     logoUrl: publicMediaUrl(remote.logoUrl),
     primaryColor: remote.primaryColor || defaults.primaryColor,
+    secondaryColor: remote.secondaryColor || defaults.secondaryColor,
+    borderRadius: remote.borderRadius ?? defaults.borderRadius,
+  };
+}
+
+function fromSettings(settings: AppearanceSettings): BrandSettings {
+  return {
+    tradeName: settings.tradeName || defaults.tradeName,
+    logoUrl: publicMediaUrl(settings.logoUrl),
+    primaryColor: settings.primaryColor || defaults.primaryColor,
+    secondaryColor: settings.secondaryColor || defaults.secondaryColor,
+    borderRadius: settings.borderRadius ?? defaults.borderRadius,
   };
 }
 
@@ -51,39 +59,47 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   const [brand, setBrand] = useState(defaults);
   const [remoteBrand, setRemoteBrand] = useState<Branding | null>(null);
 
-  const applyStored = useCallback((base: BrandSettings, slug?: string) => {
-    try {
-      const stored = localStorage.getItem(storageKey(slug));
-      setBrand(stored ? { ...base, ...JSON.parse(stored) } : base);
-    } catch {
-      setBrand(base);
-    }
-  }, []);
-
   const loadBranding = useCallback(async (slug: string) => {
     const remote = await apiRequest<Branding>(`/branding?slug=${encodeURIComponent(slug)}`);
     setRemoteBrand(remote);
     localStorage.setItem("ares.lastTenantSlug", slug);
-    applyStored(fromRemote(remote), slug);
-  }, [applyStored]);
+    setBrand(fromRemote(remote));
+  }, []);
 
   useEffect(() => {
     const querySlug = new URLSearchParams(window.location.search).get("tenant");
     const slug = user?.tenant.slug || querySlug || localStorage.getItem("ares.lastTenantSlug");
-    if (slug) loadBranding(slug).catch(() => applyStored(defaults, slug));
-    else applyStored(defaults);
-  }, [applyStored, loadBranding, user?.tenant.slug]);
+    if (slug) loadBranding(slug).catch(() => setBrand(defaults));
+    else setBrand(defaults);
+  }, [loadBranding, user?.tenant.slug]);
 
-  const saveBrand = useCallback((settings: BrandSettings) => {
-    setBrand(settings);
-    localStorage.setItem(storageKey(user?.tenant.slug), JSON.stringify(settings));
-  }, [user?.tenant.slug]);
+  const saveBrand = useCallback(async (settings: BrandSettings) => {
+    const persisted = await apiRequest<AppearanceSettings>("/appearance-settings", {
+      method: "PUT",
+      body: {
+        tradeName: settings.tradeName,
+        primaryColor: settings.primaryColor,
+        secondaryColor: settings.secondaryColor,
+        borderRadius: settings.borderRadius,
+      },
+    });
+    const updated = fromSettings(persisted);
+    setBrand(updated);
+    setRemoteBrand((current) => current ? {
+      ...current,
+      tradeName: persisted.tradeName,
+      logoUrl: persisted.logoUrl,
+      primaryColor: persisted.primaryColor,
+      secondaryColor: persisted.secondaryColor,
+      borderRadius: persisted.borderRadius,
+    } : current);
+    return updated;
+  }, []);
 
   const restoreRemoteBrand = useCallback(() => {
     const restored = remoteBrand ? fromRemote(remoteBrand) : defaults;
-    localStorage.removeItem(storageKey(user?.tenant.slug));
     setBrand(restored);
-  }, [remoteBrand, user?.tenant.slug]);
+  }, [remoteBrand]);
 
   const theme = useMemo(() => createTheme({
     palette: {

@@ -43,6 +43,7 @@ export default function AppearancePage() {
     const {brand, remoteBrand, saveBrand, restoreRemoteBrand, loadBranding} = useBrand();
     const [form, setForm] = useState<BrandSettings>(brand);
     const [saved, setSaved] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [mediaSaving, setMediaSaving] = useState(false);
     const [error, setError] = useState("");
     useEffect(() => setForm(brand), [brand]);
@@ -74,7 +75,6 @@ export default function AppearancePage() {
             const uploaded = await response.json() as PublicProfileMediaUpload;
             const updated = {...form, logoUrl: publicMediaUrl(uploaded.path)};
             setForm(updated);
-            saveBrand(updated);
             if (user?.tenant.slug) await loadBranding(user.tenant.slug);
             setSaved(true);
         } catch (err) {
@@ -97,7 +97,6 @@ export default function AppearancePage() {
             }
             const updated = {...form, logoUrl: ""};
             setForm(updated);
-            saveBrand(updated);
             if (user?.tenant.slug) await loadBranding(user.tenant.slug);
             setSaved(true);
         } catch (err) {
@@ -107,11 +106,21 @@ export default function AppearancePage() {
         }
     }
 
-    function submit(event: FormEvent) {
+    async function submit(event: FormEvent) {
         event.preventDefault();
-        saveBrand(form);
-        setSaved(true);
-        window.setTimeout(() => setSaved(false), 2800);
+        setSaving(true);
+        setSaved(false);
+        setError("");
+        try {
+            const updated = await saveBrand(form);
+            setForm(updated);
+            setSaved(true);
+            window.setTimeout(() => setSaved(false), 2800);
+        } catch (err) {
+            setError(errorMessage(err));
+        } finally {
+            setSaving(false);
+        }
     }
 
     async function syncRemote() {
@@ -128,8 +137,8 @@ export default function AppearancePage() {
         <>
             <PageHeader eyebrow="Whitelabel" title="Aparência"
                         description="Personalize a marca exibida para sua equipe neste ambiente."/>
-            <Alert severity="info" sx={{mb: 3}}>O logo enviado é armazenado no banco de dados e fica disponível em
-                todos os dispositivos. Cores, formas e nome personalizado continuam salvos neste navegador.</Alert>
+            <Alert severity="info" sx={{mb: 3}}>Nome da marca, logo, cores e arredondamento são armazenados no banco
+                de dados e ficam disponíveis em todos os dispositivos.</Alert>
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, lg: 7}}>
                     <Card><Box component="form" onSubmit={submit}><CardContent sx={{p: {xs: 2.5, sm: 3.5}}}>
@@ -207,9 +216,9 @@ export default function AppearancePage() {
                                 <Button color="inherit" startIcon={<CloudDownloadOutlinedIcon/>}
                                         onClick={syncRemote}>Sincronizar</Button>}</Stack><Button type="submit"
                                                                                                   variant="contained"
+                                                                                                  disabled={saving || mediaSaving}
                                                                                                   startIcon={
-                                                                                                      <CheckRoundedIcon/>}>Salvar
-                                aparência</Button></Stack>
+                                                                                                      <CheckRoundedIcon/>}>{saving ? "Salvando..." : "Salvar aparência"}</Button></Stack>
                         </Stack>
                     </CardContent></Box></Card>
                 </Grid>
