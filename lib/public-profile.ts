@@ -1,5 +1,8 @@
 export function publicMediaUrl(path?: string | null) {
-  return path ? `/api/backend/public/media/${path}` : "";
+  if (!path) return "";
+  if (path.startsWith("/api/backend/public/media/")) return path;
+  if (/^(?:https?:|data:|blob:)/i.test(path) || path.startsWith("/")) return path;
+  return `/api/backend/public/media/${path}`;
 }
 
 export function safeProfileColor(value: string | null | undefined, fallback: string) {

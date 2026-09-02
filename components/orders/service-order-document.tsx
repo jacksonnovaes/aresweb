@@ -2,6 +2,7 @@
 
 import { ErrorAlert } from "@/components/common/feedback";
 import { useBrand } from "@/contexts/brand-context";
+import { publicMediaUrl } from "@/lib/public-profile";
 import { enumLabel } from "@/components/common/status-chip";
 import { formatDateTime, formatMoney, maskDocument } from "@/lib/format";
 import type { ServiceOrderDocument } from "@/lib/types";
@@ -32,7 +33,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
 export function ServiceOrderDocumentDialog({ open, document, loading, error, onClose, onRetry }: Props) {
   const { brand } = useBrand();
   const primaryColor = brand.primaryColor || document?.company.primaryColor || "#2457E6";
-  const logoUrl = brand.logoUrl || document?.company.logoUrl;
+  const logoUrl = brand.logoUrl || publicMediaUrl(document?.company.logoUrl);
   const assetDescription = document?.asset
     ? [document.asset.brand, document.asset.model].filter(Boolean).join(" ")
     : "";

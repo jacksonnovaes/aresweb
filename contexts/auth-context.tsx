@@ -20,6 +20,12 @@ const publicPaths = [
   "/termos-de-uso", "/politica-de-privacidade",
 ];
 
+function isPublicRoute(pathname: string) {
+  return publicPaths.includes(pathname)
+    || pathname.startsWith("/portal")
+    || pathname.startsWith("/profissional/");
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    const isPublic = publicPaths.includes(pathname) || pathname.startsWith("/portal");
+    const isPublic = isPublicRoute(pathname);
     if (!user && !isPublic) router.replace("/");
     if (user && pathname === "/") router.replace("/dashboard");
   }, [loading, pathname, router, user]);

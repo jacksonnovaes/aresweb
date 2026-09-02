@@ -3,6 +3,9 @@
 import {PageHeader} from "@/components/common/page-header";
 import {useAuth} from "@/contexts/auth-context";
 import {BrandSettings, useBrand} from "@/contexts/brand-context";
+import {errorMessage} from "@/lib/api";
+import {publicMediaUrl} from "@/lib/public-profile";
+import type {PublicProfileMediaUpload} from "@/lib/types";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloudDownloadOutlinedIcon from "@mui/icons-material/CloudDownloadOutlined";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
@@ -40,19 +43,68 @@ export default function AppearancePage() {
     const {brand, remoteBrand, saveBrand, restoreRemoteBrand, loadBranding} = useBrand();
     const [form, setForm] = useState<BrandSettings>(brand);
     const [saved, setSaved] = useState(false);
+    const [mediaSaving, setMediaSaving] = useState(false);
+    const [error, setError] = useState("");
     useEffect(() => setForm(brand), [brand]);
     const set = <K extends keyof BrandSettings>(field: K, value: BrandSettings[K]) => setForm((current) => ({
         ...current,
         [field]: value
     }));
 
-    function upload(event: ChangeEvent<HTMLInputElement>) {
+    async function upload(event: ChangeEvent<HTMLInputElement>) {
         const file = event.target.files?.[0];
+        event.target.value = "";
         if (!file) return;
-        if (file.size > 1024 * 1024) return;
-        const reader = new FileReader();
-        reader.onload = () => set("logoUrl", String(reader.result));
-        reader.readAsDataURL(file);
+        if (file.size > 5 * 1024 * 1024) {
+            setError("A imagem deve ter no máximo 5 MB.");
+            return;
+        }
+        setMediaSaving(true);
+        setError("");
+        try {
+            const body = new FormData();
+            body.append("file", file);
+            const response = await fetch("/api/backend/public-profile-media/BRAND", {
+                method: "POST", credentials: "include", body,
+            });
+            if (!response.ok) {
+                const problem = await response.json().catch(() => null) as {detail?: string} | null;
+                throw new Error(problem?.detail ?? "Não foi possível enviar o logo.");
+            }
+            const uploaded = await response.json() as PublicProfileMediaUpload;
+            const updated = {...form, logoUrl: publicMediaUrl(uploaded.path)};
+            setForm(updated);
+            saveBrand(updated);
+            if (user?.tenant.slug) await loadBranding(user.tenant.slug);
+            setSaved(true);
+        } catch (err) {
+            setError(errorMessage(err));
+        } finally {
+            setMediaSaving(false);
+        }
+    }
+
+    async function removeLogo() {
+        setMediaSaving(true);
+        setError("");
+        try {
+            const response = await fetch("/api/backend/public-profile-media/BRAND", {
+                method: "DELETE", credentials: "include",
+            });
+            if (!response.ok) {
+                const problem = await response.json().catch(() => null) as {detail?: string} | null;
+                throw new Error(problem?.detail ?? "Não foi possível remover o logo.");
+            }
+            const updated = {...form, logoUrl: ""};
+            setForm(updated);
+            saveBrand(updated);
+            if (user?.tenant.slug) await loadBranding(user.tenant.slug);
+            setSaved(true);
+        } catch (err) {
+            setError(errorMessage(err));
+        } finally {
+            setMediaSaving(false);
+        }
     }
 
     function submit(event: FormEvent) {
@@ -76,9 +128,8 @@ export default function AppearancePage() {
         <>
             <PageHeader eyebrow="Whitelabel" title="Aparência"
                         description="Personalize a marca exibida para sua equipe neste ambiente."/>
-            <Alert severity="info" sx={{mb: 3}}>A API atual oferece consulta da identidade, mas ainda não possui
-                endpoint para atualizá-la. Por isso, estas preferências ficam salvas neste navegador e são aplicadas
-                imediatamente.</Alert>
+            <Alert severity="info" sx={{mb: 3}}>O logo enviado é armazenado no banco de dados e fica disponível em
+                todos os dispositivos. Cores, formas e nome personalizado continuam salvos neste navegador.</Alert>
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, lg: 7}}>
                     <Card><Box component="form" onSubmit={submit}><CardContent sx={{p: {xs: 2.5, sm: 3.5}}}>
@@ -94,6 +145,7 @@ export default function AppearancePage() {
                             visual</Typography><Typography variant="body2" color="text.secondary">Nome, logo e paleta
                             principal.</Typography></Box></Stack>
                         <Stack spacing={2.5}>
+                            {error && <Alert severity="error">{error}</Alert>}
                             {saved && <Alert severity="success" icon={<CheckRoundedIcon/>}>Identidade visual salva e
                                 aplicada.</Alert>}
                             <TextField label="Nome da marca" value={form.tradeName}
@@ -118,16 +170,15 @@ export default function AppearancePage() {
                                     p: 1
                                 }}/> : <ImageOutlinedIcon sx={{color: "text.disabled", fontSize: 34}}/>}</Box>
                                 <Stack spacing={1.25} flex={1}>
-                                    <TextField label="URL do logo"
-                                               value={form.logoUrl.startsWith("data:") ? "Logo carregado do dispositivo" : form.logoUrl}
-                                               onChange={(e) => set("logoUrl", e.target.value)}
-                                               disabled={form.logoUrl.startsWith("data:")}
-                                               fullWidth/><Stack direction="row" spacing={1}><Button
-                                    component="label" variant="outlined" startIcon={<UploadRoundedIcon/>}>Enviar arquivo<input
+                                    <TextField label="Logo armazenado" value={form.logoUrl ? "Imagem cadastrada" : "Nenhuma imagem cadastrada"}
+                                               disabled fullWidth/><Stack direction="row" spacing={1}><Button
+                                    component="label" variant="outlined" startIcon={<UploadRoundedIcon/>}
+                                    disabled={mediaSaving}>{mediaSaving ? "Enviando..." : "Enviar arquivo"}<input
                                     hidden type="file" accept="image/png,image/jpeg,image/webp"
-                                    onChange={upload}/></Button>{form.logoUrl &&
-                                    <Button color="inherit" onClick={() => set("logoUrl", "")}>Remover</Button>}</Stack><Typography
-                                    variant="caption" color="text.secondary">PNG, JPG ou WebP de até 1 MB.</Typography></Stack>
+                                    onChange={(event) => void upload(event)}/></Button>{form.logoUrl &&
+                                    <Button color="inherit" onClick={() => void removeLogo()}
+                                            disabled={mediaSaving}>Remover</Button>}</Stack><Typography
+                                    variant="caption" color="text.secondary">PNG, JPG ou WebP de até 5 MB.</Typography></Stack>
                             </Stack></Box>
                             <Divider/>
                             <Typography variant="h3">Cores e formas</Typography>

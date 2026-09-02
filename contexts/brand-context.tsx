@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest } from "@/lib/api";
+import { publicMediaUrl } from "@/lib/public-profile";
 import type { Branding } from "@/lib/types";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
@@ -40,7 +41,7 @@ function fromRemote(remote: Branding): BrandSettings {
   return {
     ...defaults,
     tradeName: remote.tradeName || defaults.tradeName,
-    logoUrl: remote.logoUrl || "",
+    logoUrl: publicMediaUrl(remote.logoUrl),
     primaryColor: remote.primaryColor || defaults.primaryColor,
   };
 }

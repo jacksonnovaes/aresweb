@@ -56,7 +56,8 @@ export default async function ProfessionalPage({params}: Props) {
   const backgroundColor = safeProfileColor(profile.backgroundColor, "#F6F4ED");
   const textColor = safeProfileColor(profile.textColor, "#142019");
   const uploadedLogo = publicMediaUrl(profile.logoPath);
-  const logo = uploadedLogo || profile.logoUrl || "";
+  const logo = uploadedLogo || publicMediaUrl(profile.logoUrl);
+  const profileImage = publicMediaUrl(profile.profileImagePath);
   const backgroundImage = publicMediaUrl(profile.backgroundImagePath);
   const whatsappUrl = `https://wa.me/${whatsappTarget(profile.whatsapp)}?text=${encodeURIComponent(
     `Olá! Encontrei a página de ${profile.tradeName} e gostaria de solicitar um orçamento.`,
@@ -107,6 +108,10 @@ export default async function ProfessionalPage({params}: Props) {
           </div>
         </div>
         <aside className={styles.contactCard}>
+          {profileImage
+            // A foto é servida pelo proxy público do próprio aplicativo.
+            // eslint-disable-next-line @next/next/no-img-element
+            && <img className={styles.profilePhoto} src={profileImage} alt={`Foto de ${profile.tradeName}`}/>}
           <span className={styles.contactLabel}>Atendimento direto</span>
           <strong>Conte o que você precisa</strong>
           <p>Envie uma mensagem e receba orientação para o seu serviço.</p>

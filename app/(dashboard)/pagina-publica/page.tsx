@@ -38,6 +38,7 @@ const emptySettings: PublicProfileSettings = {
   accentColor: "#2457E6",
   backgroundColor: "#F6F4ED",
   textColor: "#142019",
+  profileImagePath: null,
   logoPath: null,
   backgroundImagePath: null,
   showLogo: true,
@@ -63,7 +64,7 @@ export default function PublicProfileSettingsPage() {
   const [settings, setSettings] = useState<PublicProfileSettings>(emptySettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [mediaSaving, setMediaSaving] = useState<"LOGO" | "BACKGROUND" | "">("");
+  const [mediaSaving, setMediaSaving] = useState<"PROFILE" | "LOGO" | "BACKGROUND" | "">("");
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
@@ -100,7 +101,12 @@ export default function PublicProfileSettingsPage() {
     window.setTimeout(() => setCopied(false), 2200);
   }
 
-  async function uploadMedia(kind: "LOGO" | "BACKGROUND", event: ChangeEvent<HTMLInputElement>) {
+  function mediaPathField(kind: "PROFILE" | "LOGO" | "BACKGROUND") {
+    if (kind === "PROFILE") return "profileImagePath" as const;
+    return kind === "LOGO" ? "logoPath" as const : "backgroundImagePath" as const;
+  }
+
+  async function uploadMedia(kind: "PROFILE" | "LOGO" | "BACKGROUND", event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
@@ -121,7 +127,7 @@ export default function PublicProfileSettingsPage() {
         throw new Error(problem?.detail ?? "Não foi possível enviar a imagem.");
       }
       const uploaded = await response.json() as PublicProfileMediaUpload;
-      set(kind === "LOGO" ? "logoPath" : "backgroundImagePath", uploaded.path);
+      set(mediaPathField(kind), uploaded.path);
       setSaved(true);
     } catch (err) {
       setError(errorMessage(err));
@@ -130,7 +136,7 @@ export default function PublicProfileSettingsPage() {
     }
   }
 
-  async function removeMedia(kind: "LOGO" | "BACKGROUND") {
+  async function removeMedia(kind: "PROFILE" | "LOGO" | "BACKGROUND") {
     setMediaSaving(kind);
     setError("");
     try {
@@ -141,7 +147,7 @@ export default function PublicProfileSettingsPage() {
         const problem = await response.json().catch(() => null) as {detail?: string} | null;
         throw new Error(problem?.detail ?? "Não foi possível remover a imagem.");
       }
-      set(kind === "LOGO" ? "logoPath" : "backgroundImagePath", null);
+      set(mediaPathField(kind), null);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -212,7 +218,8 @@ export default function PublicProfileSettingsPage() {
     && (settings.manualServices.length === 0 || settings.manualServices.some((service) => !service.name.trim()));
   const incomplete = settings.enabled && (!settings.headline?.trim() || !settings.description?.trim()
     || !settings.whatsapp?.replace(/\D/g, "") || manualIncomplete);
-  const logoPreview = publicMediaUrl(settings.logoPath) || settings.logoUrl || "";
+  const profilePreview = publicMediaUrl(settings.profileImagePath);
+  const logoPreview = publicMediaUrl(settings.logoPath) || publicMediaUrl(settings.logoUrl);
   const backgroundPreview = publicMediaUrl(settings.backgroundImagePath);
 
   return (
@@ -329,9 +336,27 @@ export default function PublicProfileSettingsPage() {
 
           <Card><CardContent sx={{p: {xs: 2.5, sm: 3.5}}}><Stack spacing={3}>
             <Box><Typography variant="h3">Imagens e aparência</Typography><Typography variant="body2" color="text.secondary" mt={0.5}>
-              As imagens são armazenadas no servidor e o caminho fica registrado no banco de dados.</Typography></Box>
+              Foto, logo e fundo são armazenados de forma segura no banco de dados.</Typography></Box>
             <Grid container spacing={2.5}>
-              <Grid size={{xs: 12, md: 5}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3}}>
+              <Grid size={{xs: 12, md: 4}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3, height: "100%"}}>
+                <Typography fontWeight={850}>Foto de perfil</Typography><Typography variant="body2" color="text.secondary" mt={0.5} mb={2}>
+                  Use uma foto nítida e preferencialmente quadrada.</Typography>
+                <Box sx={{height: 150, display: "grid", placeItems: "center", borderRadius: 2.5, bgcolor: "#F4F6FA",
+                  border: "1px dashed", borderColor: "divider", overflow: "hidden"}}>
+                  {profilePreview ? <Box component="img" src={profilePreview} alt="Prévia da foto de perfil"
+                    sx={{width: 126, height: 126, objectFit: "cover", borderRadius: "50%"}}/>
+                    : <ImageOutlinedIcon sx={{fontSize: 42, color: "text.disabled"}}/>}
+                </Box>
+                <Stack direction="row" spacing={1} mt={2}>
+                  <Button component="label" variant="outlined" startIcon={<UploadRoundedIcon/>}
+                          disabled={Boolean(mediaSaving)}>{mediaSaving === "PROFILE" ? "Enviando..." : "Enviar foto"}
+                    <input hidden type="file" accept="image/png,image/jpeg,image/webp"
+                           onChange={(event) => void uploadMedia("PROFILE", event)}/></Button>
+                  {settings.profileImagePath && <Button color="inherit" onClick={() => void removeMedia("PROFILE")}
+                                                        disabled={Boolean(mediaSaving)}>Remover</Button>}
+                </Stack>
+              </Box></Grid>
+              <Grid size={{xs: 12, md: 4}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3, height: "100%"}}>
                 <Typography fontWeight={850}>Logo público</Typography><Typography variant="body2" color="text.secondary" mt={0.5} mb={2}>
                   PNG, JPG ou WebP de até 5 MB.</Typography>
                 <Box sx={{height: 150, display: "grid", placeItems: "center", borderRadius: 2.5, bgcolor: "#F4F6FA",
@@ -351,7 +376,7 @@ export default function PublicProfileSettingsPage() {
                                                   onChange={(event) => set("showLogo", event.target.checked)}/>}
                                   label="Exibir logo na página" sx={{mt: 2, mb: 0}}/>
               </Box></Grid>
-              <Grid size={{xs: 12, md: 7}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3}}>
+              <Grid size={{xs: 12, md: 4}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3, height: "100%"}}>
                 <Typography fontWeight={850}>Imagem de fundo</Typography><Typography variant="body2" color="text.secondary" mt={0.5} mb={2}>
                   Prefira uma imagem horizontal com boa resolução.</Typography>
                 <Box sx={{height: 150, borderRadius: 2.5, bgcolor: settings.backgroundColor, overflow: "hidden",

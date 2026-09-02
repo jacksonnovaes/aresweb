@@ -12,9 +12,9 @@ const allowedPaths = [
   /^branding$/,
   /^company-settings$/,
   /^public-profile-settings$/,
-  /^public-profile-media\/(?:LOGO|BACKGROUND)$/,
+  /^public-profile-media\/(?:BRAND|PROFILE|LOGO|BACKGROUND)$/,
   /^public\/profiles\/[a-z0-9]+(?:-[a-z0-9]+)*$/,
-  /^public\/media\/[0-9a-f-]{36}\/(?:logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i,
+  /^public\/media\/[0-9a-f-]{36}\/(?:brand|profile|logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i,
   /^tenants\/(register|registration-config|plan-whatsapp-simulation)$/,
   /^tenants\/coupon-validation$/,
   /^users(?:\/[0-9a-f-]+\/status)?$/i,
@@ -41,7 +41,7 @@ const publicPaths = new Set([
 function isPublicPath(path: string) {
   return publicPaths.has(path)
     || /^public\/profiles\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(path)
-    || /^public\/media\/[0-9a-f-]{36}\/(?:logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i.test(path);
+    || /^public\/media\/[0-9a-f-]{36}\/(?:brand|profile|logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i.test(path);
 }
 
 function cookieOptions(maxAge: number) {

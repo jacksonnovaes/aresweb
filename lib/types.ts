@@ -80,6 +80,7 @@ export interface PublicProfileSettings {
   accentColor: string;
   backgroundColor: string;
   textColor: string;
+  profileImagePath?: string | null;
   logoPath?: string | null;
   backgroundImagePath?: string | null;
   showLogo: boolean;
@@ -95,7 +96,7 @@ export interface PublicProfileManualService {
 }
 
 export interface PublicProfileMediaUpload {
-  kind: "LOGO" | "BACKGROUND";
+  kind: "BRAND" | "PROFILE" | "LOGO" | "BACKGROUND";
   path: string;
 }
 
@@ -122,6 +123,7 @@ export interface PublicProfile {
   accentColor: string;
   backgroundColor: string;
   textColor: string;
+  profileImagePath?: string | null;
   logoPath?: string | null;
   backgroundImagePath?: string | null;
   showLogo: boolean;
