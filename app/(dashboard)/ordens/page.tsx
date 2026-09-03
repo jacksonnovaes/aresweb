@@ -49,6 +49,8 @@ const blank = (settings?: CompanySettings) => ({
     assignedTechnicianId: "", dueAt: "",
 });
 
+const defaultWarrantyTerms = "Garantia referente aos serviços executados e descritos nesta ordem de serviço.";
+
 export default function OrdersPage() {
     const {can} = useAuth();
     const [orders, setOrders] = useState<ServiceOrder[]>([]);
@@ -78,6 +80,10 @@ export default function OrdersPage() {
     const [statusOrder, setStatusOrder] = useState<ServiceOrder | null>(null);
     const [nextStatus, setNextStatus] = useState<ServiceOrderStatus | "">("");
     const [finalValue, setFinalValue] = useState("");
+    const [deliveryReceivedBy, setDeliveryReceivedBy] = useState("");
+    const [warrantyDays, setWarrantyDays] = useState("90");
+    const [warrantyTerms, setWarrantyTerms] = useState(defaultWarrantyTerms);
+    const [deliveryNotes, setDeliveryNotes] = useState("");
     const [quickCustomerOpen, setQuickCustomerOpen] = useState(false);
     const [quickAssetOpen, setQuickAssetOpen] = useState(false);
     const [quickServiceOpen, setQuickServiceOpen] = useState(false);
@@ -202,6 +208,10 @@ export default function OrdersPage() {
         setStatusOrder(order);
         setNextStatus("");
         setFinalValue(order.finalValue?.toString() ?? "");
+        setDeliveryReceivedBy(order.delivery?.receivedBy ?? customerMap.get(order.customerId) ?? "");
+        setWarrantyDays(String(order.delivery?.warrantyDays ?? 90));
+        setWarrantyTerms(order.delivery?.warrantyTerms ?? defaultWarrantyTerms);
+        setDeliveryNotes(order.delivery?.notes ?? "");
         setFormError("");
     }
 
@@ -210,12 +220,21 @@ export default function OrdersPage() {
         setSaving(true);
         setFormError("");
         try {
+            const completing = nextStatus === "COMPLETED";
             const updated = await apiRequest<ServiceOrder>(`/service-orders/${statusOrder.id}/status`, {
                 method: "PATCH",
-                body: {status: nextStatus, finalValue: finalValue ? Number(finalValue) : null}
+                body: {
+                    status: nextStatus,
+                    finalValue: finalValue ? Number(finalValue) : null,
+                    deliveryReceivedBy: completing ? deliveryReceivedBy : null,
+                    warrantyDays: completing ? Number(warrantyDays || 0) : null,
+                    warrantyTerms: completing ? warrantyTerms || null : null,
+                    deliveryNotes: completing ? deliveryNotes || null : null,
+                }
             });
             setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
             setStatusOrder(null);
+            if (completing) startPrint(updated);
         } catch (err) {
             setFormError(errorMessage(err));
         } finally {
@@ -358,8 +377,8 @@ export default function OrdersPage() {
                                                                               aria-label={`Editar orçamento da ordem ${order.title}`}
                                                                               onClick={() => startQuote(order)}><RequestQuoteOutlinedIcon
                                     fontSize="small"/></IconButton></Tooltip>}<Tooltip
-                                title="Imprimir ordem"><IconButton size="small"
-                                                                   aria-label={`Imprimir ordem ${order.title}`}
+                                title={order.delivery ? "Imprimir termo de entrega e garantia" : "Imprimir ordem"}><IconButton size="small"
+                                                                   aria-label={`Imprimir ${order.delivery ? "termo de entrega" : "ordem"} ${order.title}`}
                                                                    onClick={() => startPrint(order)}>
                                 <PrintOutlinedIcon
                                 fontSize="small"/></IconButton></Tooltip>{can("SERVICE_ORDER_UPDATE") &&
@@ -430,7 +449,8 @@ export default function OrdersPage() {
                                                                          disabled={saving}>Cancelar</Button><Button
                 type="submit" variant="contained"
                 disabled={saving}>{saving ? "Criando..." : "Criar ordem"}</Button></DialogActions></Box></Dialog>
-            <Dialog open={Boolean(statusOrder)} onClose={() => !saving && setStatusOrder(null)} fullWidth maxWidth="xs"><DialogTitle>Alterar
+            <Dialog open={Boolean(statusOrder)} onClose={() => !saving && setStatusOrder(null)} fullWidth
+                    maxWidth={nextStatus === "COMPLETED" ? "sm" : "xs"}><DialogTitle>Alterar
                 status da ordem<Typography variant="body2" color="text.secondary"
                                            mt={0.5}>{statusOrder?.title}</Typography></DialogTitle><DialogContent
                 dividers><Stack spacing={2.25}>
@@ -448,10 +468,34 @@ export default function OrdersPage() {
                     htmlInput: {min: 0, step: 0.01},
                     input: {startAdornment: <InputAdornment position="start">R$</InputAdornment>}
                 }}/>
+                {nextStatus === "COMPLETED" && <>
+                    <Alert severity="success">Ao concluir, será criado o termo de entrega e garantia. A prévia para
+                        impressão abrirá automaticamente.</Alert>
+                    <TextField label="Recebido por" value={deliveryReceivedBy}
+                               onChange={(event) => setDeliveryReceivedBy(event.target.value)} required fullWidth
+                               helperText="Nome do cliente ou responsável que recebeu o serviço."
+                               slotProps={{htmlInput: {maxLength: 160}}}/>
+                    <TextField label="Prazo da garantia" type="number" value={warrantyDays}
+                               onChange={(event) => setWarrantyDays(event.target.value)} required fullWidth
+                               helperText="Use 0 quando não houver garantia adicional informada."
+                               slotProps={{
+                                   htmlInput: {min: 0, max: 3650, step: 1},
+                                   input: {endAdornment: <InputAdornment position="end">dias</InputAdornment>}
+                               }}/>
+                    <TextField label="Condições da garantia" value={warrantyTerms}
+                               onChange={(event) => setWarrantyTerms(event.target.value)} multiline minRows={3}
+                               fullWidth slotProps={{htmlInput: {maxLength: 2000}}}/>
+                    <TextField label="Observações da entrega (opcional)" value={deliveryNotes}
+                               onChange={(event) => setDeliveryNotes(event.target.value)} multiline minRows={2}
+                               fullWidth slotProps={{htmlInput: {maxLength: 2000}}}/>
+                </>}
             </Stack></DialogContent><DialogActions sx={{p: 2.5}}><Button onClick={() => setStatusOrder(null)}
                                                                          disabled={saving}>Cancelar</Button><Button
-                variant="contained" onClick={changeStatus} disabled={saving || !nextStatus} startIcon={
-                <BuildCircleOutlinedIcon/>}>{saving ? "Atualizando..." : "Confirmar etapa"}</Button></DialogActions></Dialog>
+                variant="contained" onClick={changeStatus}
+                disabled={saving || !nextStatus || (nextStatus === "COMPLETED" && !deliveryReceivedBy.trim())}
+                startIcon={nextStatus === "COMPLETED" ? <PrintOutlinedIcon/> : <BuildCircleOutlinedIcon/>}>
+                {saving ? "Atualizando..." : nextStatus === "COMPLETED" ? "Concluir e preparar impressão" : "Confirmar etapa"}
+            </Button></DialogActions></Dialog>
             <Dialog open={Boolean(quoteOrder)} onClose={() => !quoteSaving && setQuoteOrder(null)} fullWidth
                     maxWidth="md"><DialogTitle>Editar orçamento<Typography variant="body2" color="text.secondary"
                                                                            mt={0.5}>{quoteOrder?.title}</Typography></DialogTitle><DialogContent

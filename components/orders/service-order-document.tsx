@@ -4,7 +4,7 @@ import { ErrorAlert } from "@/components/common/feedback";
 import { useBrand } from "@/contexts/brand-context";
 import { publicMediaUrl } from "@/lib/public-profile";
 import { enumLabel } from "@/components/common/status-chip";
-import { formatDateTime, formatMoney, maskDocument } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney, maskDocument } from "@/lib/format";
 import type { ServiceOrderDocument } from "@/lib/types";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import {
@@ -37,6 +37,7 @@ export function ServiceOrderDocumentDialog({ open, document, loading, error, onC
   const assetDescription = document?.asset
     ? [document.asset.brand, document.asset.model].filter(Boolean).join(" ")
     : "";
+  const delivery = document?.delivery;
 
   return (
     <Dialog className="service-order-print-dialog" open={open} onClose={onClose} fullWidth maxWidth="md">
@@ -51,7 +52,7 @@ export function ServiceOrderDocumentDialog({ open, document, loading, error, onC
                   {logoUrl ? <Box className="service-order-print-logo" component="img" src={logoUrl} alt={`Logo ${document.company.tradeName}`} sx={{ width: 72, height: 72, objectFit: "contain" }} /> : <Box sx={{ width: 54, height: 54, borderRadius: 2, display: "grid", placeItems: "center", bgcolor: primaryColor, color: "white", fontWeight: 900, fontSize: 24 }}>{document.company.tradeName.charAt(0).toUpperCase()}</Box>}
                   <Box><Typography variant="h6" fontWeight={850}>{document.company.tradeName}</Typography><Typography variant="body2" color="text.secondary">Razão social: {document.company.legalName}</Typography>{document.company.document && <Typography variant="body2" color="text.secondary">CPF/CNPJ: {maskDocument(document.company.document)}</Typography>}</Box>
                 </Stack>
-                <Box textAlign="right"><Typography variant="overline" color="text.secondary" fontWeight={800}>Ordem de serviço</Typography><Typography variant="h5" fontWeight={900} sx={{ color: primaryColor }}>#{document.order.id.slice(0, 8).toUpperCase()}</Typography><Typography variant="caption" color="text.secondary">Emitida em {formatDateTime(new Date().toISOString())}</Typography></Box>
+                <Box textAlign="right"><Typography variant="overline" color="text.secondary" fontWeight={800}>{delivery ? "Termo de entrega e garantia" : "Orçamento / ordem de serviço"}</Typography><Typography variant="h5" fontWeight={900} sx={{ color: primaryColor }}>#{document.order.id.slice(0, 8).toUpperCase()}</Typography><Typography variant="caption" color="text.secondary">Emitido em {formatDateTime(new Date().toISOString())}</Typography></Box>
               </Stack>
             </Box>
 
@@ -86,7 +87,7 @@ export function ServiceOrderDocumentDialog({ open, document, loading, error, onC
               <Detail label="Status">{document.order.statusName || enumLabel(document.order.status)}</Detail>
               <Detail label="Prioridade">{enumLabel(document.order.priority)}</Detail>
               <Detail label="Abertura">{formatDateTime(document.order.openedAt)}</Detail>
-              <Detail label="Prazo">{formatDateTime(document.order.dueAt)}</Detail>
+              <Detail label={delivery ? "Entrega" : "Prazo"}>{formatDateTime(delivery?.deliveredAt ?? document.order.dueAt)}</Detail>
             </Box>
 
             <Typography variant="subtitle1" fontWeight={850} mb={1}>Orçamento</Typography>
@@ -100,14 +101,27 @@ export function ServiceOrderDocumentDialog({ open, document, loading, error, onC
               {document.order.finalValue !== undefined && <Stack direction="row" justifyContent="space-between" width={{ xs: "100%", sm: 310 }}><Typography fontWeight={800}>Valor final</Typography><Typography fontWeight={900} fontSize="1.1rem" sx={{ color: primaryColor }}>{formatMoney(document.order.finalValue)}</Typography></Stack>}
             </Stack>
 
+            {delivery && <Box sx={{ mt: 4, p: 2.5, border: `1px solid ${primaryColor}40`, borderLeft: `5px solid ${primaryColor}`, borderRadius: 2, breakInside: "avoid" }}>
+              <Typography variant="subtitle1" fontWeight={850} sx={{ color: primaryColor }}>Entrega e garantia</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 2, mt: 1.5 }}>
+                <Detail label="Recebido por">{delivery.receivedBy || document.customer.name}</Detail>
+                <Detail label="Data da entrega">{formatDateTime(delivery.deliveredAt)}</Detail>
+                <Detail label="Garantia">{delivery.warrantyDays > 0
+                  ? `${delivery.warrantyDays} dias — até ${formatDate(delivery.warrantyUntil)}`
+                  : "Sem garantia adicional informada"}</Detail>
+              </Box>
+              {delivery.warrantyTerms && <Box mt={2}><Typography variant="caption" color="text.secondary" fontWeight={750}>CONDIÇÕES DA GARANTIA</Typography><Typography variant="body2" mt={0.4} sx={{ whiteSpace: "pre-wrap" }}>{delivery.warrantyTerms}</Typography></Box>}
+              {delivery.notes && <Box mt={1.5}><Typography variant="caption" color="text.secondary" fontWeight={750}>OBSERVAÇÕES DA ENTREGA</Typography><Typography variant="body2" mt={0.4} sx={{ whiteSpace: "pre-wrap" }}>{delivery.notes}</Typography></Box>}
+            </Box>}
+
             <Stack direction="row" spacing={5} mt={8}>
               <Box flex={1} sx={{ borderTop: "1px solid #98A2B3", pt: 1, textAlign: "center" }}><Typography variant="caption">Responsável pelo atendimento</Typography></Box>
-              <Box flex={1} sx={{ borderTop: "1px solid #98A2B3", pt: 1, textAlign: "center" }}><Typography variant="caption">Cliente</Typography></Box>
+              <Box flex={1} sx={{ borderTop: "1px solid #98A2B3", pt: 1, textAlign: "center" }}><Typography variant="caption">{delivery ? `Recebedor: ${delivery.receivedBy || document.customer.name}` : "Cliente"}</Typography></Box>
             </Stack>
           </Box>
         )}
       </DialogContent>
-      <DialogActions className="print-hide" sx={{ p: 2.5 }}><Button onClick={onClose}>Fechar</Button><Button variant="contained" startIcon={<PrintOutlinedIcon />} onClick={() => window.print()} disabled={!document || loading}>Imprimir</Button></DialogActions>
+      <DialogActions className="print-hide" sx={{ p: 2.5 }}><Button onClick={onClose}>Fechar</Button><Button variant="contained" startIcon={<PrintOutlinedIcon />} onClick={() => window.print()} disabled={!document || loading}>{delivery ? "Imprimir termo de entrega" : "Imprimir ordem"}</Button></DialogActions>
     </Dialog>
   );
 }

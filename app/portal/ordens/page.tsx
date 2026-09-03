@@ -5,7 +5,7 @@ import { ErrorAlert, PageLoading } from "@/components/common/feedback";
 import { StatusChip } from "@/components/common/status-chip";
 import { useCustomerAuth } from "@/contexts/customer-auth-context";
 import { customerApiRequest, errorMessage } from "@/lib/api";
-import { formatDateTime, formatMoney } from "@/lib/format";
+import { formatDate, formatDateTime, formatMoney } from "@/lib/format";
 import type { CustomerServiceOrder } from "@/lib/types";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
@@ -66,6 +66,18 @@ export default function CustomerOrdersPage() {
               <OrderDetail label="Valor estimado" value={formatMoney(order.estimatedValue)} />
               <OrderDetail label="Valor final" value={order.finalValue == null ? "—" : formatMoney(order.finalValue)} />
             </Box>
+            {order.delivery && <Box sx={{ p: 2.5, mb: 3, borderRadius: 2.5, bgcolor: "#F0FDF4", border: "1px solid #BBF7D0" }}>
+              <Typography variant="h3" color="#166534">Entrega e garantia</Typography>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 2, mt: 1.5 }}>
+                <OrderDetail label="Recebido por" value={order.delivery.receivedBy || customer.name} />
+                <OrderDetail label="Entregue em" value={formatDateTime(order.delivery.deliveredAt)} />
+                <OrderDetail label="Garantia" value={order.delivery.warrantyDays > 0
+                  ? `${order.delivery.warrantyDays} dias — até ${formatDate(order.delivery.warrantyUntil)}`
+                  : "Sem garantia adicional informada"} />
+              </Box>
+              {order.delivery.warrantyTerms && <Typography variant="body2" mt={2} sx={{ whiteSpace: "pre-wrap" }}><strong>Condições:</strong> {order.delivery.warrantyTerms}</Typography>}
+              {order.delivery.notes && <Typography variant="body2" mt={1} sx={{ whiteSpace: "pre-wrap" }}><strong>Observações:</strong> {order.delivery.notes}</Typography>}
+            </Box>}
             <Divider sx={{ mb: 2.5 }} />
             <Typography variant="h3" mb={1.5}>Itens do atendimento</Typography>
             <TableContainer sx={{ border: "1px solid", borderColor: "divider", borderRadius: 2 }}><Table size="small">

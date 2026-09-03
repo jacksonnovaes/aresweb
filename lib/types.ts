@@ -327,6 +327,15 @@ export interface ServiceOrderQuoteLine {
   total?: number;
 }
 
+export interface ServiceOrderDelivery {
+  deliveredAt: string;
+  receivedBy: string;
+  warrantyDays: number;
+  warrantyUntil?: string | null;
+  warrantyTerms?: string | null;
+  notes?: string | null;
+}
+
 export interface ServiceOrder {
   id: string;
   tenantId: string;
@@ -344,6 +353,7 @@ export interface ServiceOrder {
   openedAt: string;
   dueAt?: string;
   completedAt?: string;
+  delivery?: ServiceOrderDelivery | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -390,6 +400,7 @@ export interface ServiceOrderDocument {
     serialNumber?: string;
   };
   quoteLines: ServiceOrderQuoteLine[];
+  delivery?: ServiceOrderDelivery | null;
 }
 
 export interface ServiceOrderEmailResult {
@@ -415,6 +426,7 @@ export interface CustomerServiceOrder {
   openedAt: string;
   dueAt?: string;
   completedAt?: string;
+  delivery?: ServiceOrderDelivery | null;
   createdAt: string;
   updatedAt: string;
 }
