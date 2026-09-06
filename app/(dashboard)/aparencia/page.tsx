@@ -277,10 +277,13 @@ export default function AppearancePage() {
                                                                                          }}>Nova ordem de
                                 serviço</Button></CardContent>
                         </Card>
-                        <Box sx={{mt: 2, p: 2.5, borderRadius: 3, bgcolor: "#EFF4FF"}}><Typography variant="body2"
-                                                                                                   fontWeight={750}>Identidade
-                            do cadastro</Typography><Typography variant="body2" color="text.secondary"
-                                                                mt={0.5}>{remoteBrand ? `${remoteBrand.tradeName} • ${remoteBrand.primaryColor || "cor padrão"}` : "Nenhuma identidade remota carregada."}</Typography></Box>
+                        <Box sx={{mt: 2, p: 2.5, borderRadius: 3, bgcolor: "#EFF4FF"}}>
+                            <Typography variant="body2" fontWeight={750}>Identidade do cadastro</Typography>
+                            <Typography variant="body2"
+                                        color="text.secondary" mt={0.5}>{remoteBrand ?
+                                `${remoteBrand.tradeName} • ${remoteBrand.primaryColor || "cor padrão"}` : "Nenhuma identidade remota carregada."}
+                            </Typography>
+                        </Box>
                     </Box>
                 </Grid>
             </Grid>

@@ -12,6 +12,7 @@ const allowedPaths = [
   /^branding$/,
   /^appearance-settings$/,
   /^company-settings$/,
+  /^communication-settings$/,
   /^public-profile-settings$/,
   /^public-profile-media\/(?:BRAND|PROFILE|LOGO|BACKGROUND)$/,
   /^public\/profiles\/[a-z0-9]+(?:-[a-z0-9]+)*$/,

@@ -160,6 +160,19 @@ export interface CompanySettings {
   additionalUserMonthlyPrice: number;
 }
 
+export interface CommunicationSettings {
+  whatsappEnabled: boolean;
+  whatsappNumber?: string | null;
+  whatsappTokenConfigured: boolean;
+  smtpEnabled: boolean;
+  smtpHost?: string | null;
+  smtpPort?: number | null;
+  smtpUsername?: string | null;
+  smtpPasswordConfigured: boolean;
+  smtpFromEmail?: string | null;
+  smtpStartTls: boolean;
+}
+
 export type SubscriptionPlan = "SOLO" | "PRO" | "BUSINESS";
 export type SubscriptionBillingCycle = "MONTHLY" | "ANNUAL";
 export type QuoteCalculationMethod = "QUANTITY" | "SQUARE_METER" | "CUBIC_METER";

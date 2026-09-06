@@ -4,6 +4,7 @@ import {ErrorAlert, PageLoading} from "@/components/common/feedback";
 import {PageHeader} from "@/components/common/page-header";
 import {StatusChip} from "@/components/common/status-chip";
 import {DataManagementCard} from "@/components/privacy/data-management-card";
+import {CommunicationSettingsCard} from "@/components/settings/communication-settings-card";
 import {apiRequest, errorMessage} from "@/lib/api";
 import type {CompanySettings, QuoteCalculationMethod, ServiceOrderStatusDefinition} from "@/lib/types";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
@@ -315,6 +316,7 @@ export default function CompanySettingsPage() {
                             disabled={saving || (settings.enabledQuoteCalculationMethods ?? []).length === 0 || !settings.enabledQuoteCalculationMethods.includes(settings.quoteCalculationMethod) || (settings.enabledQuoteCalculationMethods.includes("SQUARE_METER") && (!settings.defaultSquareMeterPrice || settings.defaultSquareMeterPrice <= 0)) || (settings.enabledQuoteCalculationMethods.includes("CUBIC_METER") && (!settings.defaultCubicMeterPrice || settings.defaultCubicMeterPrice <= 0))}
                             sx={{alignSelf: "flex-end"}}>{saving ? "Salvando..." : "Salvar configuração"}</Button>
                 </Stack></CardContent></Box></Card>
+                <CommunicationSettingsCard/>
                 <Card><CardContent sx={{p: {xs: 2.5, sm: 3.5}}}><Stack spacing={2.5}>
                     <Stack direction="row" spacing={1.5} alignItems="center"><Box sx={{
                         width: 44,

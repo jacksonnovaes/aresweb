@@ -523,10 +523,9 @@ export default function OrdersPage() {
                 e-mail<Typography variant="body2" color="text.secondary"
                                   mt={0.5}>{emailOrder?.title}</Typography></DialogTitle><DialogContent dividers><Stack
                 spacing={2.25}>
-                <Alert severity="info">Modo de simulação ativo: a mensagem será montada e registrada no backend, mas
-                    nenhum e-mail real será enviado até o SMTP ser configurado.</Alert>
+                <Alert severity="info">A ordem será enviada usando o servidor SMTP configurado para sua empresa.</Alert>
                 {emailError && <Alert severity="error">{emailError}</Alert>}
-                {emailResult && <Alert severity="success">Simulação concluída para {emailResult.recipient}.</Alert>}
+                {emailResult && <Alert severity="success">E-mail enviado para {emailResult.recipient}.</Alert>}
                 <TextField label="Destinatário" type="email" value={recipient}
                            onChange={(event) => setRecipient(event.target.value)} required fullWidth
                            disabled={emailSending || Boolean(emailResult)} autoFocus/>
@@ -550,7 +549,7 @@ export default function OrdersPage() {
             </Stack></DialogContent><DialogActions sx={{p: 2.5}}><Button onClick={() => setEmailOrder(null)}
                                                                          disabled={emailSending}>{emailResult ? "Fechar" : "Cancelar"}</Button>{!emailResult &&
                 <Button type="submit" variant="contained" startIcon={<EmailOutlinedIcon/>}
-                        disabled={emailSending}>{emailSending ? "Simulando..." : "Simular envio"}</Button>}
+                        disabled={emailSending}>{emailSending ? "Enviando..." : "Enviar e-mail"}</Button>}
             </DialogActions></Box></Dialog>
             <QuickCustomerDialog open={quickCustomerOpen} onClose={() => setQuickCustomerOpen(false)}
                                  onCreated={(customer) => {

@@ -13,6 +13,7 @@ export interface BrandSettings {
   primaryColor: string;
   secondaryColor: string;
   borderRadius: number;
+  theme?: string;
 }
 
 const defaults: BrandSettings = {
@@ -21,6 +22,7 @@ const defaults: BrandSettings = {
   primaryColor: "#2457E6",
   secondaryColor: "#16A085",
   borderRadius: 12,
+  theme: "light",
 };
 
 interface BrandContextValue {
