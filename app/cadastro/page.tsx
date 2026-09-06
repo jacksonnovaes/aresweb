@@ -119,13 +119,9 @@ const currency = new Intl.NumberFormat("pt-BR", {
  * /cadastro?plan=empresarial
  */
 const planMap: Record<string, SubscriptionPlan> = {
-  basic: "BASIC",
-  basico: "BASIC",
-  básico: "BASIC",
-
+  basic: "SOLO",
   pro: "PRO",
   profissional: "PRO",
-
   business: "BUSINESS",
   empresarial: "BUSINESS",
   empresa: "BUSINESS",
