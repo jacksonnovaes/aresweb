@@ -41,6 +41,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   FormEvent,
   useEffect,
+  Suspense,
   useState,
 } from "react";
 
@@ -120,6 +121,8 @@ const currency = new Intl.NumberFormat("pt-BR", {
  */
 const planMap: Record<string, SubscriptionPlan> = {
   basic: "SOLO",
+  basico: "SOLO",
+  solo: "SOLO",
   pro: "PRO",
   profissional: "PRO",
   business: "BUSINESS",
@@ -127,7 +130,7 @@ const planMap: Record<string, SubscriptionPlan> = {
   empresa: "BUSINESS",
 };
 
-export default function RegisterPage() {
+function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1014,7 +1017,7 @@ export default function RegisterPage() {
                 </ToggleButton>
 
                 <ToggleButton value="ANNUAL">
-                  Anual — cerca de 2
+                  Anual ? cerca de 2
                   meses grátis
                 </ToggleButton>
               </ToggleButtonGroup>
@@ -1908,5 +1911,30 @@ export default function RegisterPage() {
           </Stack>
         </Box>
       </AuthShell>
+  );
+}
+export default function RegisterPage() {
+  return (
+      <Suspense
+          fallback={
+            <AuthShell
+                title="Crie seu espaço"
+                subtitle="Carregando as condições de cadastro..."
+            >
+              <Box
+                  sx={{
+                    minHeight: 300,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+              >
+                <CircularProgress />
+              </Box>
+            </AuthShell>
+          }
+      >
+        <RegisterPageContent />
+      </Suspense>
   );
 }
