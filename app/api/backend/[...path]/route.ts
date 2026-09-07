@@ -65,11 +65,17 @@ async function upstream(
   const target = new URL(`${API_URL}/api/v1/${path}`);
   request.nextUrl.searchParams.forEach((value, key) => target.searchParams.append(key, value));
   const headers = new Headers({ Accept: "application/json" });
-  const contentType = request.headers.get("content-type");
-  if (contentType) headers.set("Content-Type", contentType);
   if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
 
   const hasBody = !["GET", "HEAD"].includes(request.method);
+  if (hasBody) {
+    const contentType = request.headers.get("content-type");
+    if (path.startsWith("public-profile-media/") && contentType) {
+      headers.set("Content-Type", contentType);
+    } else {
+      headers.set("Content-Type", "application/json");
+    }
+  }
   const body = overrideBody ?? (hasBody ? await request.text() : undefined);
   return fetch(target, {
     method: request.method,
