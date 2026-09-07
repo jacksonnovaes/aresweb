@@ -31,7 +31,8 @@ export function AuthShell({ children, title, subtitle }: { children: React.React
         </Container>
       </Box>
       <Box sx={{
-        display: { xs: "none", lg: "flex" }, position: "relative", overflow: "hidden", color: "white", p: 8,
+        display: { xs: "none", lg: "flex" }, position: "sticky", top: 0, alignSelf: "start",
+        minHeight: "100vh", height: "100dvh", overflow: "hidden", color: "white", p: 8,
         alignItems: "center", justifyContent: "center",
         background: `linear-gradient(145deg, #101828 0%, ${brand.primaryColor} 70%, ${brand.secondaryColor} 140%)`,
         "&::before": { content: '""', position: "absolute", width: 520, height: 520, borderRadius: "50%", right: -160, top: -180, border: "90px solid rgba(255,255,255,.06)" },
