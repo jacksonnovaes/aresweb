@@ -64,17 +64,12 @@ export function ServiceOrderDocumentDialog({ open, document, loading, error, onC
                       color="text.secondary">{[document.customer.email, document.customer.phone].filter(Boolean).join(" • ") || "Contato não informado"}</Typography>{document.customer.document &&
                       <Typography variant="body2" color="text.secondary">{maskDocument(document.customer.document)}</Typography>}{document.customer.address &&
                       <Typography variant="body2" color="text.secondary" sx={{whiteSpace: "pre-wrap"}}>{document.customer.address}</Typography>}</Box>
-                  {document.asset ?
+                  {document.asset &&
                       <Box flex={1}><Typography variant="overline" fontWeight={800} color="text.secondary">Ativo em manutenção</Typography>
                           <Typography variant="h6" fontWeight={800}>{document.asset.name}</Typography>
                           <Typography variant="body2" color="text.secondary">{document.asset.typeName}{assetDescription ? ` • ${assetDescription}` : ""}
                           </Typography>{document.asset.serialNumber &&
-                          <Typography variant="body2" color="text.secondary">Série: {document.asset.serialNumber}</Typography>}</Box> :
-                      <Box flex={1}>
-                          <Typography variant="overline" fontWeight={800} color="text.secondary">Tipo de atendimento</Typography>
-                          <Typography variant="h6" fontWeight={800}>Serviço sem ativo</Typography>
-                          <Typography variant="body2" color="text.secondary">Atendimento identificado pela descrição e pelos itens do orçamento.</Typography>
-                      </Box>
+                          <Typography variant="body2" color="text.secondary">Série: {document.asset.serialNumber}</Typography>}</Box>
                   }
               </Stack>
 
