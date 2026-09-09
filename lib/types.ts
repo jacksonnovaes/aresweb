@@ -36,6 +36,24 @@ export interface TenantSummary {
   slug: string;
 }
 
+export type TenantStatus = "ACTIVE" | "BLOCKED" | "INACTIVE";
+
+export interface AdminTenant {
+  id: string;
+  legalName: string;
+  tradeName: string;
+  slug: string;
+  document: string;
+  status: TenantStatus;
+  subscriptionActive: boolean;
+  accessEnabled: boolean;
+  subscriptionPlan: SubscriptionPlan;
+  subscriptionBillingCycle: SubscriptionBillingCycle;
+  subscriptionPaidUntil?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Me {
   id: string;
   name: string;

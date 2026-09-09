@@ -16,6 +16,7 @@ import PublicRoundedIcon from "@mui/icons-material/PublicRounded";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
+import CorporateFareRoundedIcon from "@mui/icons-material/CorporateFareRounded";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
 import {
   AppBar, Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon,
@@ -26,8 +27,9 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const drawerWidth = 270;
-const items: { label: string; href: string; icon: React.ReactNode; permission?: Permission }[] = [
+const items: { label: string; href: string; icon: React.ReactNode; permission?: Permission; superAdminOnly?: boolean }[] = [
   { label: "Visão geral", href: "/dashboard", icon: <DashboardRoundedIcon /> },
+  { label: "Empresas", href: "/admin/empresas", icon: <CorporateFareRoundedIcon />, superAdminOnly: true },
   { label: "Clientes", href: "/clientes", icon: <PeopleAltOutlinedIcon />, permission: "CUSTOMER_READ" },
   { label: "Ativos", href: "/ativos", icon: <DevicesOtherRoundedIcon />, permission: "ASSET_READ" },
   { label: "Catálogo", href: "/servicos", icon: <DesignServicesOutlinedIcon />, permission: "SERVICE_READ" },
@@ -51,7 +53,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Box sx={{ px: 2.5, height: 78, display: "flex", alignItems: "center" }}><BrandMark inverse /></Box>
       <Divider sx={{ borderColor: "rgba(255,255,255,.08)" }} />
       <List sx={{ px: 1.5, pt: 2, flex: 1 }}>
-        {items.filter((item) => !item.permission || can(item.permission)).map((item) => {
+        {items.filter((item) => (!item.superAdminOnly || user.roles.includes("SUPER_ADMIN"))
+          && (!item.permission || can(item.permission))).map((item) => {
           const selected = pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <ListItemButton

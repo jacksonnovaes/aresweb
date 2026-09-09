@@ -19,6 +19,7 @@ const allowedPaths = [
   /^public\/media\/[0-9a-f-]{36}\/(?:brand|profile|logo|background)-[0-9a-f-]{36}\.(?:png|jpg|webp)$/i,
   /^tenants\/(register|registration-config|plan-whatsapp-simulation)$/,
   /^tenants\/coupon-validation$/,
+  /^admin\/tenants(?:\/[0-9a-f-]+\/access)?$/i,
   /^users(?:\/[0-9a-f-]+\/status)?$/i,
   /^customers(?:\/[0-9a-f-]+)?$/i,
   /^assets(?:\/[0-9a-f-]+)?$/i,
