@@ -1,7 +1,6 @@
 @layer theme, base, mui, components, utilities;
 
 :root {
-  color-scheme: light;
   --font-manrope: "Avenir Next", Avenir, "Segoe UI", Arial, sans-serif;
   --font-newsreader: "Iowan Old Style", Baskerville, Georgia, serif;
   --ink: #11202c;
@@ -32,7 +31,6 @@ body {
 
 body {
   margin: 0;
-  background: #f5f7fb;
 }
 
 a {

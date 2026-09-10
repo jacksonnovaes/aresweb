@@ -154,7 +154,7 @@ export function QuoteLinesEditor({
       </Stack>
 
       {lines.map((line, index) => (
-        <Card key={index} variant="outlined" sx={{ p: 2, bgcolor: "#FBFCFE" }}>
+        <Card key={index} variant="outlined" sx={{ p: 2, bgcolor: "action.hover" }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1.5}>
             <Typography variant="body2" fontWeight={800}>Linha {index + 1}</Typography>
             <Tooltip title="Remover linha"><span><IconButton size="small" onClick={() => remove(index)} aria-label={`Remover linha ${index + 1}`}><DeleteOutlineRoundedIcon fontSize="small" /></IconButton></span></Tooltip>

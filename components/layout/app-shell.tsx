@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <Drawer variant="permanent" sx={{ display: { xs: "none", lg: "block" }, width: drawerWidth, "& .MuiDrawer-paper": { width: drawerWidth, border: 0 } }}>{navigation}</Drawer>
       <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} sx={{ display: { lg: "none" }, "& .MuiDrawer-paper": { width: drawerWidth, border: 0 } }}>{navigation}</Drawer>
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider", bgcolor: "rgba(255,255,255,.92)", backdropFilter: "blur(14px)" }}>
+        <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider", bgcolor: "background.paper", backdropFilter: "blur(14px)" }}>
           <Toolbar sx={{ minHeight: { xs: 64, sm: 72 }, px: { xs: 2, sm: 3.5 } }}>
             <IconButton onClick={() => setMobileOpen(true)} sx={{ display: { lg: "none" }, mr: 1 }} aria-label="Abrir menu"><MenuRoundedIcon /></IconButton>
             <Box sx={{ flex: 1 }}>

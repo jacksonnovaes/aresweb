@@ -455,7 +455,7 @@ export default function OrdersPage() {
                                            mt={0.5}>{statusOrder?.title}</Typography></DialogTitle><DialogContent
                 dividers><Stack spacing={2.25}>
                 {formError && <Alert severity="error">{formError}</Alert>}
-                <Box sx={{p: 2, borderRadius: 2.5, bgcolor: "#F8FAFC"}}><Typography variant="caption"
+                <Box sx={{p: 2, borderRadius: 2.5, bgcolor: "action.hover"}}><Typography variant="caption"
                                                                                     color="text.secondary">Status
                     atual</Typography><Box mt={0.75}>{statusOrder &&
                     <StatusChip value={statusOrder.status} label={statusMap.get(statusOrder.status)}/>}</Box></Box>
@@ -533,7 +533,7 @@ export default function OrdersPage() {
                     <Box sx={{border: "1px solid", borderColor: "divider", borderRadius: 2, overflow: "hidden"}}><Box
                         sx={{
                             p: 1.75,
-                            bgcolor: "#F7F8FA",
+                            bgcolor: "action.hover",
                             borderBottom: "1px solid",
                             borderColor: "divider"
                         }}><Typography variant="caption" color="text.secondary">Assunto</Typography><Typography

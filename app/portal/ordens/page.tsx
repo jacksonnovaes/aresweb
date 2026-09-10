@@ -34,8 +34,8 @@ export default function CustomerOrdersPage() {
   if (authLoading || !customer) return <PageLoading label="Validando seu acesso..." />;
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#F5F7FB" }}>
-      <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider", bgcolor: "rgba(255,255,255,.94)", backdropFilter: "blur(14px)" }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default" }}>
+      <AppBar position="sticky" color="inherit" elevation={0} sx={{ borderBottom: "1px solid", borderColor: "divider", bgcolor: "background.paper", backdropFilter: "blur(14px)" }}>
         <Toolbar sx={{ minHeight: { xs: 68, sm: 76 } }}><Container maxWidth="lg" disableGutters sx={{ display: "flex", alignItems: "center", gap: 2 }}>
           <BrandMark />
           <Box sx={{ flex: 1 }} />
@@ -60,7 +60,7 @@ export default function CustomerOrdersPage() {
               <Stack direction="row" gap={1} alignItems="flex-start"><StatusChip value={order.priority} /><StatusChip value={order.status} label={order.statusName} /></Stack>
             </Stack>
             {order.description && <Typography color="text.secondary" mt={2} sx={{ whiteSpace: "pre-wrap" }}>{order.description}</Typography>}
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2, p: 2.25, my: 3, borderRadius: 2.5, bgcolor: "#F8FAFC" }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2, p: 2.25, my: 3, borderRadius: 2.5, bgcolor: "action.hover" }}>
               <OrderDetail label="Abertura" value={formatDateTime(order.openedAt)} />
               <OrderDetail label="Prazo" value={formatDateTime(order.dueAt)} />
               <OrderDetail label="Valor estimado" value={formatMoney(order.estimatedValue)} />

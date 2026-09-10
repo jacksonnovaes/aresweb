@@ -146,7 +146,7 @@ export default function CompanySettingsPage() {
                         border: "1px solid",
                         borderColor: "divider",
                         borderRadius: 2.5,
-                        bgcolor: "#F8FAFC"
+                        bgcolor: "action.hover"
                     }}>
                         <Stack direction={{xs: "column", sm: "row"}} justifyContent="space-between" spacing={2}>
                             <Box><Typography variant="overline" color="text.secondary">Plano
@@ -195,7 +195,7 @@ export default function CompanySettingsPage() {
                         border: "1px solid",
                         borderColor: "divider",
                         borderRadius: 2.5,
-                        bgcolor: "#F8FAFC"
+                        bgcolor: "action.hover"
                     }}>
                         <FormControlLabel control={<Switch checked={!settings.requireAssets} onChange={(event) => {
                             setSaved(false);
@@ -334,7 +334,7 @@ export default function CompanySettingsPage() {
                         border: "1px solid",
                         borderColor: "divider",
                         borderRadius: 2.5,
-                        bgcolor: "#F8FAFC"
+                        bgcolor: "action.hover"
                     }}>
                         <Typography variant="subtitle2" fontWeight={800} mb={1.5}>Status disponíveis</Typography>
                         <Stack direction="row" gap={1} flexWrap="wrap">

@@ -8,13 +8,15 @@ import {publicMediaUrl} from "@/lib/public-profile";
 import type {PublicProfileMediaUpload} from "@/lib/types";
 import CheckRoundedIcon from "@mui/icons-material/CheckRounded";
 import CloudDownloadOutlinedIcon from "@mui/icons-material/CloudDownloadOutlined";
+import DarkModeRoundedIcon from "@mui/icons-material/DarkModeRounded";
 import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
+import LightModeRoundedIcon from "@mui/icons-material/LightModeRounded";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import RestartAltRoundedIcon from "@mui/icons-material/RestartAltRounded";
 import UploadRoundedIcon from "@mui/icons-material/UploadRounded";
 import {
-    Alert, Box, Button, Card, CardContent, Divider, Grid, InputAdornment, Slider, Stack, TextField,
-    Typography,
+    Alert, Box, Button, Card, CardContent, Divider, FormControlLabel, Grid, InputAdornment, Slider,
+    Stack, Switch, TextField, Typography,
 } from "@mui/material";
 import {ChangeEvent, FormEvent, useEffect, useState} from "react";
 
@@ -137,7 +139,7 @@ export default function AppearancePage() {
         <>
             <PageHeader eyebrow="Whitelabel" title="Aparência"
                         description="Personalize a marca exibida para sua equipe neste ambiente."/>
-            <Alert severity="info" sx={{mb: 3}}>Nome da marca, logo, cores e arredondamento são armazenados no banco
+            <Alert severity="info" sx={{mb: 3}}>Nome da marca, logo, cores, modo de exibição e arredondamento são armazenados no banco
                 de dados e ficam disponíveis em todos os dispositivos.</Alert>
             <Grid container spacing={3}>
                 <Grid size={{xs: 12, lg: 7}}>
@@ -190,6 +192,29 @@ export default function AppearancePage() {
                                     variant="caption" color="text.secondary">PNG, JPG ou WebP de até 5 MB.</Typography></Stack>
                             </Stack></Box>
                             <Divider/>
+                            <Box sx={{p: 2.25, border: "1px solid", borderColor: "divider", borderRadius: 2.5}}>
+                                <Stack direction={{xs: "column", sm: "row"}} alignItems={{sm: "center"}}
+                                       justifyContent="space-between" spacing={2}>
+                                    <Stack direction="row" spacing={1.5} alignItems="center">
+                                        <Box sx={{display: "grid", placeItems: "center", color: "primary.main"}}>
+                                            {form.darkMode ? <DarkModeRoundedIcon/> : <LightModeRoundedIcon/>}
+                                        </Box>
+                                        <Box><Typography fontWeight={800}>Modo escuro</Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Use superfícies escuras em todo o painel da empresa.
+                                            </Typography>
+                                        </Box>
+                                    </Stack>
+                                    <FormControlLabel
+                                        control={<Switch checked={form.darkMode}
+                                                         onChange={(event) => set("darkMode", event.target.checked)}
+                                                         inputProps={{"aria-label": "Ativar modo escuro"}}/>}
+                                        label={form.darkMode ? "Ativado" : "Desativado"}
+                                        labelPlacement="start"
+                                        sx={{m: 0, gap: 1}}
+                                    />
+                                </Stack>
+                            </Box>
                             <Typography variant="h3">Cores e formas</Typography>
                             <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
                                 <ColorField label="Cor principal"
@@ -228,7 +253,9 @@ export default function AppearancePage() {
                                                                                                color="text.secondary"
                                                                                                mb={2}>A aparência final
                         será aplicada ao salvar.</Typography>
-                        <Card sx={{overflow: "hidden", borderRadius: `${form.borderRadius}px`}}>
+                        <Card sx={{overflow: "hidden", borderRadius: `${form.borderRadius}px`,
+                                   bgcolor: form.darkMode ? "#111827" : "#FFFFFF",
+                                   color: form.darkMode ? "#F3F4F6" : "#172033"}}>
                             <Box sx={{
                                 height: 150,
                                 p: 3,
@@ -262,9 +289,9 @@ export default function AppearancePage() {
                                 <Grid key={label} size={{xs: 6}}><Box sx={{
                                     p: 2,
                                     borderRadius: `${Math.max(6, form.borderRadius - 3)}px`,
-                                    bgcolor: "#F8FAFC",
-                                    border: "1px solid #EEF1F6"
-                                }}><Typography variant="caption" color="text.secondary">{label}</Typography><Typography
+                                    bgcolor: form.darkMode ? "#192235" : "#F8FAFC",
+                                    border: `1px solid ${form.darkMode ? "#2A364A" : "#EEF1F6"}`
+                                }}><Typography variant="caption" sx={{color: form.darkMode ? "#A7B0C0" : "#667085"}}>{label}</Typography><Typography
                                     sx={{
                                         fontSize: 24,
                                         fontWeight: 800,
@@ -277,7 +304,7 @@ export default function AppearancePage() {
                                                                                          }}>Nova ordem de
                                 serviço</Button></CardContent>
                         </Card>
-                        <Box sx={{mt: 2, p: 2.5, borderRadius: 3, bgcolor: "#EFF4FF"}}>
+                        <Box sx={{mt: 2, p: 2.5, borderRadius: 3, bgcolor: "action.hover"}}>
                             <Typography variant="body2" fontWeight={750}>Identidade do cadastro</Typography>
                             <Typography variant="body2"
                                         color="text.secondary" mt={0.5}>{remoteBrand ?

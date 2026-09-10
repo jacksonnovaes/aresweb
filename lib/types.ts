@@ -80,6 +80,7 @@ export interface Branding {
   primaryColor?: string | null;
   secondaryColor?: string | null;
   borderRadius?: number | null;
+  darkMode?: boolean;
 }
 
 export interface AppearanceSettings {
@@ -88,6 +89,7 @@ export interface AppearanceSettings {
   primaryColor: string;
   secondaryColor: string;
   borderRadius: number;
+  darkMode: boolean;
 }
 
 export interface PublicProfileSettings {

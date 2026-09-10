@@ -20,7 +20,7 @@ export function LegalDocument({
     : version;
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#F5F7FB", py: { xs: 2, sm: 5 } }}>
+    <Box sx={{ minHeight: "100vh", bgcolor: "background.default", py: { xs: 2, sm: 5 } }}>
       <Container maxWidth="md">
         <Stack direction="row" alignItems="center" justifyContent="space-between" mb={3}>
           <BrandMark />

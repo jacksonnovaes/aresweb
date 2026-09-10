@@ -188,7 +188,7 @@ export default function DashboardPage() {
                                 variant="determinate" value={value} sx={{
                                 height: 7,
                                 borderRadius: 99,
-                                bgcolor: "#EEF1F6",
+                                bgcolor: "action.selected",
                                 "& .MuiLinearProgress-bar": {bgcolor: color}
                             }}/></Box>;
                         })}
@@ -196,7 +196,7 @@ export default function DashboardPage() {
                             mt: 3,
                             p: 2,
                             borderRadius: 2.5,
-                            bgcolor: "#F8FAFC",
+                            bgcolor: "action.hover",
                             display: "flex",
                             alignItems: "center",
                             gap: 1.5

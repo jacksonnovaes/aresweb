@@ -18,3 +18,26 @@ test("legal documents are publicly accessible", async ({ page }) => {
   await page.goto("/politica-de-privacidade");
   await expect(page.getByRole("heading", { name: "Política de Privacidade", level: 1 })).toBeVisible();
 });
+
+test("applies the tenant dark mode from remote branding", async ({ page }) => {
+  await page.route("**/api/backend/branding?slug=dark-workshop", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        tradeName: "Dark Workshop",
+        slug: "dark-workshop",
+        primaryColor: "#5B8CFF",
+        secondaryColor: "#2DD4BF",
+        borderRadius: 14,
+        darkMode: true,
+      }),
+    });
+  });
+
+  await page.goto("/?tenant=dark-workshop");
+
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor))
+    .toBe("rgb(11, 17, 32)");
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
+    .toBe("dark");
+});

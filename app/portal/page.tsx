@@ -32,7 +32,7 @@ export default function CustomerLoginPage() {
   if (loading || customer) return <PageLoading label="Preparando o portal do cliente..." />;
 
   return (
-    <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", position: "relative", overflow: "hidden", bgcolor: "#F4F7FB", py: 5,
+    <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", position: "relative", overflow: "hidden", bgcolor: "background.default", py: 5,
       "&::before": { content: '\"\"', position: "absolute", width: 520, height: 520, borderRadius: "50%", bgcolor: "primary.main", opacity: 0.08, top: -300, right: -160 },
       "&::after": { content: '\"\"', position: "absolute", width: 340, height: 340, borderRadius: 12, bgcolor: "secondary.main", opacity: 0.07, bottom: -230, left: -130, transform: "rotate(28deg)" },
     }}>

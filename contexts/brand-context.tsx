@@ -13,7 +13,7 @@ export interface BrandSettings {
   primaryColor: string;
   secondaryColor: string;
   borderRadius: number;
-  theme?: string;
+  darkMode: boolean;
 }
 
 const defaults: BrandSettings = {
@@ -22,7 +22,7 @@ const defaults: BrandSettings = {
   primaryColor: "#2457E6",
   secondaryColor: "#16A085",
   borderRadius: 12,
-  theme: "light",
+  darkMode: false,
 };
 
 interface BrandContextValue {
@@ -43,6 +43,7 @@ function fromRemote(remote: Branding): BrandSettings {
     primaryColor: remote.primaryColor || defaults.primaryColor,
     secondaryColor: remote.secondaryColor || defaults.secondaryColor,
     borderRadius: remote.borderRadius ?? defaults.borderRadius,
+    darkMode: remote.darkMode ?? defaults.darkMode,
   };
 }
 
@@ -53,6 +54,7 @@ function fromSettings(settings: AppearanceSettings): BrandSettings {
     primaryColor: settings.primaryColor || defaults.primaryColor,
     secondaryColor: settings.secondaryColor || defaults.secondaryColor,
     borderRadius: settings.borderRadius ?? defaults.borderRadius,
+    darkMode: settings.darkMode ?? defaults.darkMode,
   };
 }
 
@@ -83,6 +85,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
         primaryColor: settings.primaryColor,
         secondaryColor: settings.secondaryColor,
         borderRadius: settings.borderRadius,
+        darkMode: settings.darkMode,
       },
     });
     const updated = fromSettings(persisted);
@@ -94,6 +97,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       primaryColor: persisted.primaryColor,
       secondaryColor: persisted.secondaryColor,
       borderRadius: persisted.borderRadius,
+      darkMode: persisted.darkMode,
     } : current);
     return updated;
   }, []);
@@ -105,12 +109,16 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
 
   const theme = useMemo(() => createTheme({
     palette: {
-      mode: "light",
+      mode: brand.darkMode ? "dark" : "light",
       primary: { main: brand.primaryColor },
       secondary: { main: brand.secondaryColor },
-      background: { default: "#F5F7FB", paper: "#FFFFFF" },
-      text: { primary: "#172033", secondary: "#667085" },
-      divider: "#E5E9F2",
+      background: brand.darkMode
+        ? { default: "#0B1120", paper: "#111827" }
+        : { default: "#F5F7FB", paper: "#FFFFFF" },
+      text: brand.darkMode
+        ? { primary: "#F3F4F6", secondary: "#A7B0C0" }
+        : { primary: "#172033", secondary: "#667085" },
+      divider: brand.darkMode ? "#2A364A" : "#E5E9F2",
     },
     shape: { borderRadius: brand.borderRadius },
     typography: {
@@ -126,7 +134,13 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
         styleOverrides: { root: { minHeight: 42, paddingInline: 18 } },
       },
       MuiCard: {
-        styleOverrides: { root: { border: "1px solid #E5E9F2", boxShadow: "0 1px 3px rgba(16,24,40,.04)" } },
+        styleOverrides: {
+          root: {
+            border: `1px solid ${brand.darkMode ? "#2A364A" : "#E5E9F2"}`,
+            boxShadow: brand.darkMode ? "0 1px 3px rgba(0,0,0,.35)" : "0 1px 3px rgba(16,24,40,.04)",
+            backgroundImage: "none",
+          },
+        },
       },
       MuiTextField: { defaultProps: { size: "medium" } },
       MuiFormControl: { defaultProps: { size: "medium" } },
@@ -145,7 +159,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
   return (
     <BrandContext.Provider value={value}>
       <ThemeProvider theme={theme}>
-        <CssBaseline />
+        <CssBaseline enableColorScheme />
         {children}
       </ThemeProvider>
     </BrandContext.Provider>

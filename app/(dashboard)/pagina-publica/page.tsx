@@ -302,7 +302,7 @@ export default function PublicProfileSettingsPage() {
               ? <Alert severity="info">Todos os serviços ativos do catálogo serão exibidos automaticamente.</Alert>
               : <Stack spacing={2}>
                 {settings.manualServices.map((service, index) => <Box key={index} sx={{p: 2.25, border: "1px solid",
-                  borderColor: "divider", borderRadius: 2.5, bgcolor: "#FBFCFE"}}>
+                  borderColor: "divider", borderRadius: 2.5, bgcolor: "action.hover"}}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
                     <Typography fontWeight={850}>Serviço {index + 1}</Typography>
                     <IconButton aria-label={`Remover serviço ${index + 1}`} onClick={() => removeManualService(index)}
@@ -341,7 +341,7 @@ export default function PublicProfileSettingsPage() {
               <Grid size={{xs: 12, md: 4}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3, height: "100%"}}>
                 <Typography fontWeight={850}>Foto de perfil</Typography><Typography variant="body2" color="text.secondary" mt={0.5} mb={2}>
                   Use uma foto nítida e preferencialmente quadrada.</Typography>
-                <Box sx={{height: 150, display: "grid", placeItems: "center", borderRadius: 2.5, bgcolor: "#F4F6FA",
+                <Box sx={{height: 150, display: "grid", placeItems: "center", borderRadius: 2.5, bgcolor: "action.hover",
                   border: "1px dashed", borderColor: "divider", overflow: "hidden"}}>
                   {profilePreview ? <Box component="img" src={profilePreview} alt="Prévia da foto de perfil"
                     sx={{width: 126, height: 126, objectFit: "cover", borderRadius: "50%"}}/>
@@ -359,7 +359,7 @@ export default function PublicProfileSettingsPage() {
               <Grid size={{xs: 12, md: 4}}><Box sx={{p: 2.5, border: "1px solid", borderColor: "divider", borderRadius: 3, height: "100%"}}>
                 <Typography fontWeight={850}>Logo público</Typography><Typography variant="body2" color="text.secondary" mt={0.5} mb={2}>
                   PNG, JPG ou WebP de até 5 MB.</Typography>
-                <Box sx={{height: 150, display: "grid", placeItems: "center", borderRadius: 2.5, bgcolor: "#F4F6FA",
+                <Box sx={{height: 150, display: "grid", placeItems: "center", borderRadius: 2.5, bgcolor: "action.hover",
                   border: "1px dashed", borderColor: "divider", overflow: "hidden"}}>
                   {logoPreview ? <Box component="img" src={logoPreview} alt="Prévia do logo" sx={{width: "100%", height: "100%", objectFit: "contain", p: 2}}/>
                     : <ImageOutlinedIcon sx={{fontSize: 42, color: "text.disabled"}}/>}
