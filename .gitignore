@@ -4,3 +4,5 @@
 *.log
 *.tsbuildinfo
 .env*.local
+playwright-report/
+test-results/

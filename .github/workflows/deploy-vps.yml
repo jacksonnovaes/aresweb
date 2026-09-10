@@ -5,6 +5,10 @@ on:
     branches:
       - main
       - development
+  pull_request:
+    branches:
+      - main
+      - development
   workflow_dispatch:
 
 concurrency:
@@ -15,8 +19,42 @@ permissions:
   contents: read
 
 jobs:
+  quality:
+    name: Test, lint and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Run lint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Install browser for end-to-end tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: npm run test:e2e
+
   deploy:
-    if: vars.DEPLOY_ENABLED == 'true'
+    if: github.event_name != 'pull_request' && vars.DEPLOY_ENABLED == 'true'
+    needs: quality
     name: Validate and deploy
     runs-on: ubuntu-latest
     timeout-minutes: 45
