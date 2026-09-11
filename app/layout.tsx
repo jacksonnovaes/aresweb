@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import "shepherd.js/dist/css/shepherd.css";
 import "./globals.css";
 import { Providers } from "./providers";
 

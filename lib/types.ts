@@ -73,6 +73,11 @@ export interface AuthenticationResult {
   };
 }
 
+export interface OnboardingState {
+  completed: boolean;
+  completedAt?: string | null;
+}
+
 export interface Branding {
   tradeName: string;
   slug: string;
@@ -385,10 +390,26 @@ export interface ServiceOrder {
   assignedTechnicianId?: string;
   openedAt: string;
   dueAt?: string;
+  scheduledStartAt?: string;
+  scheduledEndAt?: string;
   completedAt?: string;
   delivery?: ServiceOrderDelivery | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ServiceOrderTechnician {
+  id: string;
+  name: string;
+}
+
+export interface ServiceOrderTimelineEvent {
+  id: string;
+  action: string;
+  actorId?: string | null;
+  actorName: string;
+  detailsJson: string;
+  occurredAt: string;
 }
 
 export interface ServiceOrderDocument {

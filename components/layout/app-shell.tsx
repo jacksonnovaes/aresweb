@@ -2,10 +2,12 @@
 
 import { BrandMark } from "@/components/common/brand-mark";
 import { PageLoading } from "@/components/common/feedback";
+import { FirstLoginTour, START_ONBOARDING_EVENT } from "@/components/onboarding/first-login-tour";
 import { useAuth } from "@/contexts/auth-context";
 import { initials } from "@/lib/format";
 import type { Permission } from "@/lib/types";
 import BuildCircleOutlinedIcon from "@mui/icons-material/BuildCircleOutlined";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import DashboardRoundedIcon from "@mui/icons-material/DashboardRounded";
 import DesignServicesOutlinedIcon from "@mui/icons-material/DesignServicesOutlined";
 import DevicesOtherRoundedIcon from "@mui/icons-material/DevicesOtherRounded";
@@ -18,6 +20,7 @@ import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import PersonOutlineRoundedIcon from "@mui/icons-material/PersonOutlineRounded";
 import CorporateFareRoundedIcon from "@mui/icons-material/CorporateFareRounded";
 import ShieldOutlinedIcon from "@mui/icons-material/ShieldOutlined";
+import ExploreOutlinedIcon from "@mui/icons-material/ExploreOutlined";
 import {
   AppBar, Avatar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon,
   ListItemText, Menu, MenuItem, Toolbar, Tooltip, Typography,
@@ -27,13 +30,14 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const drawerWidth = 270;
-const items: { label: string; href: string; icon: React.ReactNode; permission?: Permission; superAdminOnly?: boolean }[] = [
-  { label: "Visão geral", href: "/dashboard", icon: <DashboardRoundedIcon /> },
+const items: { label: string; href: string; icon: React.ReactNode; tourId?: string; permission?: Permission; superAdminOnly?: boolean }[] = [
+  { label: "Visão geral", href: "/dashboard", icon: <DashboardRoundedIcon />, tourId: "nav-dashboard" },
   { label: "Empresas", href: "/admin/empresas", icon: <CorporateFareRoundedIcon />, superAdminOnly: true },
-  { label: "Clientes", href: "/clientes", icon: <PeopleAltOutlinedIcon />, permission: "CUSTOMER_READ" },
+  { label: "Clientes", href: "/clientes", icon: <PeopleAltOutlinedIcon />, tourId: "nav-customers", permission: "CUSTOMER_READ" },
   { label: "Ativos", href: "/ativos", icon: <DevicesOtherRoundedIcon />, permission: "ASSET_READ" },
-  { label: "Catálogo", href: "/servicos", icon: <DesignServicesOutlinedIcon />, permission: "SERVICE_READ" },
-  { label: "Ordens de serviço", href: "/ordens", icon: <BuildCircleOutlinedIcon />, permission: "SERVICE_ORDER_READ" },
+  { label: "Catálogo", href: "/servicos", icon: <DesignServicesOutlinedIcon />, tourId: "nav-services", permission: "SERVICE_READ" },
+  { label: "Ordens de serviço", href: "/ordens", icon: <BuildCircleOutlinedIcon />, tourId: "nav-orders", permission: "SERVICE_ORDER_READ" },
+  { label: "Agenda", href: "/agenda", icon: <CalendarMonthOutlinedIcon />, permission: "SERVICE_ORDER_READ" },
   { label: "Usuários", href: "/usuarios", icon: <PersonOutlineRoundedIcon />, permission: "USER_MANAGE" },
   { label: "Configuração da empresa", href: "/configuracoes", icon: <SettingsOutlinedIcon />, permission: "TENANT_CONFIGURE" },
   { label: "Página pública", href: "/pagina-publica", icon: <PublicRoundedIcon />, permission: "TENANT_CONFIGURE" },
@@ -52,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%", bgcolor: "#101828", color: "white" }}>
       <Box sx={{ px: 2.5, height: 78, display: "flex", alignItems: "center" }}><BrandMark inverse /></Box>
       <Divider sx={{ borderColor: "rgba(255,255,255,.08)" }} />
-      <List sx={{ px: 1.5, pt: 2, flex: 1 }}>
+      <List data-tour="main-navigation" sx={{ px: 1.5, pt: 2, flex: 1 }}>
         {items.filter((item) => (!item.superAdminOnly || user.roles.includes("SUPER_ADMIN"))
           && (!item.permission || can(item.permission))).map((item) => {
           const selected = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -61,6 +65,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               component={Link}
               href={item.href}
               key={item.href}
+              data-tour={item.tourId}
               selected={selected}
               onClick={() => setMobileOpen(false)}
               sx={{
@@ -86,6 +91,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      <FirstLoginTour />
       <Drawer variant="permanent" sx={{ display: { xs: "none", lg: "block" }, width: drawerWidth, "& .MuiDrawer-paper": { width: drawerWidth, border: 0 } }}>{navigation}</Drawer>
       <Drawer open={mobileOpen} onClose={() => setMobileOpen(false)} sx={{ display: { lg: "none" }, "& .MuiDrawer-paper": { width: drawerWidth, border: 0 } }}>{navigation}</Drawer>
       <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -97,7 +103,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Typography fontWeight={750}>Como estão as operações hoje?</Typography>
             </Box>
             <Tooltip title="Menu da conta">
-              <IconButton onClick={(event) => setAnchor(event.currentTarget)} aria-label="Menu da conta">
+              <IconButton data-tour="account-menu" onClick={(event) => setAnchor(event.currentTarget)} aria-label="Menu da conta">
                 <Avatar sx={{ width: 38, height: 38, bgcolor: "primary.main", fontSize: 14, fontWeight: 800 }}>{initials(user.name)}</Avatar>
               </IconButton>
             </Tooltip>
@@ -106,11 +112,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Divider />
               <MenuItem component={Link} href="/aparencia"><ListItemIcon><PaletteOutlinedIcon fontSize="small" /></ListItemIcon>Aparência</MenuItem>
               <MenuItem component={Link} href="/seguranca"><ListItemIcon><ShieldOutlinedIcon fontSize="small" /></ListItemIcon>Segurança</MenuItem>
+              <MenuItem onClick={() => { setAnchor(null); window.dispatchEvent(new Event(START_ONBOARDING_EVENT)); }}><ListItemIcon><ExploreOutlinedIcon fontSize="small" /></ListItemIcon>Iniciar tour</MenuItem>
               <MenuItem onClick={logout}><ListItemIcon><LogoutRoundedIcon fontSize="small" /></ListItemIcon>Sair</MenuItem>
             </Menu>
           </Toolbar>
         </AppBar>
-        <Box component="main" sx={{ p: { xs: 2, sm: 3.5, xl: 4.5 }, maxWidth: 1560, mx: "auto" }}>{children}</Box>
+        <Box component="main" data-tour="app-content" sx={{ p: { xs: 2, sm: 3.5, xl: 4.5 }, maxWidth: 1560, mx: "auto" }}>{children}</Box>
       </Box>
     </Box>
   );

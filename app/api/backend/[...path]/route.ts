@@ -9,6 +9,7 @@ type RouteContext = { params: Promise<{ path: string[] }> };
 
 const allowedPaths = [
   /^auth\/(login|refresh|logout|forgot-password|reset-password|change-password|me)$/,
+  /^onboarding$/,
   /^branding$/,
   /^appearance-settings$/,
   /^company-settings$/,
@@ -26,7 +27,7 @@ const allowedPaths = [
   /^asset-types$/i,
   /^services(?:\/[0-9a-f-]+)?$/i,
   /^service-order-statuses$/i,
-  /^service-orders(?:\/[0-9a-f-]+(?:\/(?:status|quote|document|email))?)?$/i,
+  /^service-orders(?:\/technicians|\/[0-9a-f-]+(?:\/(?:status|quote|document|email|planning|timeline))?)?$/i,
   /^privacy\/(export|account)$/,
 ];
 

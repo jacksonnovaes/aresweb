@@ -20,6 +20,68 @@
   --red-soft: #f6e7e5;
 }
 
+/* Tour de boas-vindas */
+.shepherd-element.ares-tour {
+  max-width: min(390px, calc(100vw - 32px));
+  border-radius: 16px;
+  box-shadow: 0 22px 70px rgba(16, 24, 40, 0.24);
+}
+
+.ares-tour .shepherd-content {
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.ares-tour .shepherd-header {
+  align-items: flex-start;
+  background: #101828;
+  padding: 20px 20px 12px;
+}
+
+.ares-tour .shepherd-title {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.ares-tour .shepherd-cancel-icon {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.ares-tour .shepherd-text {
+  color: #475467;
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 18px 20px;
+}
+
+.ares-tour .shepherd-footer {
+  gap: 8px;
+  padding: 0 20px 20px;
+}
+
+.ares-tour .shepherd-button {
+  background: #0b63d8;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 750;
+  padding: 10px 16px;
+}
+
+.ares-tour .shepherd-button:not(:disabled):hover {
+  background: #074fae;
+}
+
+.ares-tour .shepherd-button.shepherd-button-secondary {
+  background: #eef2f6;
+  color: #344054;
+}
+
+.shepherd-modal-overlay-container.shepherd-modal-is-visible {
+  opacity: 0.55;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -101,7 +101,7 @@ export default function DashboardPage() {
             <PageHeader eyebrow="Painel operacional" title={`Bom dia, ${user?.name.split(" ")[0] ?? ""}`}
                         description="Acompanhe os principais indicadores da sua operação.">
                 {can("SERVICE_ORDER_CREATE") &&
-                    <Button component={Link} href="/ordens?nova=1" variant="contained" startIcon={<AddRoundedIcon/>}>Nova
+                    <Button data-tour="new-order" component={Link} href="/ordens?nova=1" variant="contained" startIcon={<AddRoundedIcon/>}>Nova
                         ordem</Button>}
             </PageHeader>
             {error && <Box mb={3}><ErrorAlert message={error} onRetry={load}/></Box>}

@@ -38,6 +38,7 @@ const BrandContext = createContext<BrandContextValue | null>(null);
 
 const dashboardRoutes = [
   "/admin",
+  "/agenda",
   "/aparencia",
   "/ativos",
   "/clientes",

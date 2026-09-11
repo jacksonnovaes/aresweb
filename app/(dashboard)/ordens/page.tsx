@@ -4,6 +4,7 @@ import {ErrorAlert, TableEmpty, TableLoading} from "@/components/common/feedback
 import {PageHeader} from "@/components/common/page-header";
 import {StatusChip, enumLabel} from "@/components/common/status-chip";
 import {ServiceOrderDocumentDialog} from "@/components/orders/service-order-document";
+import {OrderPlanningDialog, OrderTimelineDialog} from "@/components/orders/order-planning-dialogs";
 import {
     emptyQuoteLine, QuoteLinesEditor, storedQuoteLine, type QuoteLineDraft,
 } from "@/components/orders/quote-lines-editor";
@@ -19,8 +20,8 @@ import type {
     CatalogService,
     CompanySettings,
     Customer,
-    ManagedUser,
     ServiceOrder,
+    ServiceOrderTechnician,
     ServiceOrderDocument,
     ServiceOrderEmailResult,
     ServiceOrderPriority,
@@ -28,12 +29,14 @@ import type {
     ServiceOrderStatusDefinition
 } from "@/lib/types";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
+import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded";
 import BuildCircleOutlinedIcon from "@mui/icons-material/BuildCircleOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import PrintOutlinedIcon from "@mui/icons-material/PrintOutlined";
 import RequestQuoteOutlinedIcon from "@mui/icons-material/RequestQuoteOutlined";
 import SearchRoundedIcon from "@mui/icons-material/SearchRounded";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import {
     Alert, Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, IconButton,
     InputAdornment, InputLabel, MenuItem, Select, Stack, Table, TableBody, TableCell, TableContainer,
@@ -46,7 +49,7 @@ const blank = (settings?: CompanySettings) => ({
     lines: [emptyQuoteLine(settings?.quoteCalculationMethod, settings?.defaultSquareMeterPrice,
         settings?.defaultCubicMeterPrice)],
     title: "", description: "", priority: "NORMAL" as ServiceOrderPriority,
-    assignedTechnicianId: "", dueAt: "",
+    assignedTechnicianId: "", dueAt: "", scheduledStartAt: "", scheduledEndAt: "",
 });
 
 const defaultWarrantyTerms = "Garantia referente aos serviços executados e descritos nesta ordem de serviço.";
@@ -57,7 +60,7 @@ export default function OrdersPage() {
     const [customers, setCustomers] = useState<Customer[]>([]);
     const [assets, setAssets] = useState<Asset[]>([]);
     const [services, setServices] = useState<CatalogService[]>([]);
-    const [users, setUsers] = useState<ManagedUser[]>([]);
+    const [technicians, setTechnicians] = useState<ServiceOrderTechnician[]>([]);
     const [statuses, setStatuses] = useState<ServiceOrderStatusDefinition[]>([]);
     const [companySettings, setCompanySettings] = useState<CompanySettings>({
         requireAssets: true, subscriptionPlan: "SOLO", subscriptionBillingCycle: "MONTHLY",
@@ -102,17 +105,19 @@ export default function OrdersPage() {
     const [quoteAssetId, setQuoteAssetId] = useState("");
     const [quoteError, setQuoteError] = useState("");
     const [quoteSaving, setQuoteSaving] = useState(false);
+    const [planningOrder, setPlanningOrder] = useState<ServiceOrder | null>(null);
+    const [timelineOrder, setTimelineOrder] = useState<ServiceOrder | null>(null);
 
     const load = useCallback(async () => {
         setLoading(true);
         setError("");
         try {
-            const [orderData, customerData, assetData, serviceData, userData, settingsData, statusData] = await Promise.all([
+            const [orderData, customerData, assetData, serviceData, technicianData, settingsData, statusData] = await Promise.all([
                 apiRequest<ServiceOrder[]>("/service-orders"),
                 can("CUSTOMER_READ") ? apiRequest<Customer[]>("/customers") : Promise.resolve([]),
                 can("ASSET_READ") ? apiRequest<Asset[]>("/assets") : Promise.resolve([]),
                 can("SERVICE_READ") ? apiRequest<CatalogService[]>("/services") : Promise.resolve([]),
-                can("USER_MANAGE") ? apiRequest<ManagedUser[]>("/users") : Promise.resolve([]),
+                can("SERVICE_ORDER_UPDATE") ? apiRequest<ServiceOrderTechnician[]>("/service-orders/technicians") : Promise.resolve([]),
                 apiRequest<CompanySettings>("/company-settings"),
                 apiRequest<ServiceOrderStatusDefinition[]>("/service-order-statuses"),
             ]);
@@ -120,7 +125,7 @@ export default function OrdersPage() {
             setCustomers(customerData);
             setAssets(assetData);
             setServices(serviceData);
-            setUsers(userData);
+            setTechnicians(technicianData);
             setCompanySettings(settingsData);
             setStatuses(statusData);
         } catch (err) {
@@ -138,6 +143,7 @@ export default function OrdersPage() {
 
     const customerMap = useMemo(() => new Map(customers.map((item) => [item.id, item.name])), [customers]);
     const assetMap = useMemo(() => new Map(assets.map((item) => [item.id, item.name])), [assets]);
+    const technicianMap = useMemo(() => new Map(technicians.map((item) => [item.id, item.name])), [technicians]);
     const serviceMap = useMemo(() => new Map(services.map((item) => [item.id, item])), [services]);
     const statusMap = useMemo(() => new Map(statuses.map((item) => [item.code, item.name])), [statuses]);
     const statusFilterOptions = useMemo(() => {
@@ -193,6 +199,8 @@ export default function OrdersPage() {
                     priority: form.priority,
                     assignedTechnicianId: form.assignedTechnicianId || null,
                     dueAt: form.dueAt ? new Date(form.dueAt).toISOString() : null,
+                    scheduledStartAt: form.scheduledStartAt ? new Date(form.scheduledStartAt).toISOString() : null,
+                    scheduledEndAt: form.scheduledEndAt ? new Date(form.scheduledEndAt).toISOString() : null,
                 }
             });
             setOrders((current) => [created, ...current]);
@@ -345,13 +353,13 @@ export default function OrdersPage() {
                 </Stack>
                 <TableContainer><Table>
                     <TableHead><TableRow><TableCell>Ordem</TableCell><TableCell>Cliente /
-                        atendimento</TableCell><TableCell>Prioridade</TableCell><TableCell>Status</TableCell><TableCell>Prazo</TableCell><TableCell
+                        atendimento</TableCell><TableCell>Prioridade</TableCell><TableCell>Status</TableCell><TableCell>Técnico</TableCell><TableCell>Agenda / prazo</TableCell><TableCell
                         align="right">Valor</TableCell>{can("SERVICE_ORDER_UPDATE") &&
                         <TableCell align="right">Próxima etapa</TableCell>}<TableCell
                         align="right">Ações</TableCell></TableRow></TableHead>
                     <TableBody>
-                        {loading && <TableLoading colSpan={can("SERVICE_ORDER_UPDATE") ? 8 : 7}/>}
-                        {!loading && filtered.length === 0 && <TableEmpty colSpan={can("SERVICE_ORDER_UPDATE") ? 8 : 7}
+                        {loading && <TableLoading colSpan={can("SERVICE_ORDER_UPDATE") ? 9 : 8}/>}
+                        {!loading && filtered.length === 0 && <TableEmpty colSpan={can("SERVICE_ORDER_UPDATE") ? 9 : 8}
                                                                           message="Nenhuma ordem de serviço encontrada."/>}
                         {filtered.map((order) => <TableRow key={order.id} hover>
                             <TableCell><Typography variant="body2"
@@ -364,7 +372,10 @@ export default function OrdersPage() {
                                 color="text.secondary">{order.assetId ? assetMap.get(order.assetId) ?? "Ativo" : "Serviço sem ativo"}</Typography></TableCell>
                             <TableCell><StatusChip value={order.priority}/></TableCell><TableCell><StatusChip
                             value={order.status}
-                            label={statusMap.get(order.status)}/></TableCell><TableCell>{formatDate(order.dueAt)}</TableCell><TableCell
+                            label={statusMap.get(order.status)}/></TableCell><TableCell><Typography variant="body2">{technicianMap.get(order.assignedTechnicianId ?? "") ?? "Não atribuído"}</Typography></TableCell><TableCell>
+                                <Typography variant="body2">{order.scheduledStartAt ? new Date(order.scheduledStartAt).toLocaleString("pt-BR", {dateStyle: "short", timeStyle: "short"}) : "Não agendado"}</Typography>
+                                <Typography variant="caption" color="text.secondary">Prazo: {formatDate(order.dueAt)}</Typography>
+                            </TableCell><TableCell
                             align="right"
                             sx={{fontWeight: 700}}>{formatMoney(order.finalValue ?? order.estimatedValue)}</TableCell>
                             {can("SERVICE_ORDER_UPDATE") &&
@@ -372,11 +383,14 @@ export default function OrdersPage() {
                                                                  onClick={() => startStatus(order)}
                                                                  disabled={!statuses.some((status) => status.code !== order.status)}>Alterar</Button></TableCell>}
                             <TableCell align="right"><Stack direction="row" justifyContent="flex-end"
-                                                            spacing={0.25}>{can("SERVICE_ORDER_UPDATE") &&
+                                                            spacing={0.25}>{can("SERVICE_ORDER_UPDATE") && <>
+                                <Tooltip title="Planejar atendimento"><IconButton size="small"
+                                  aria-label={`Planejar atendimento da ordem ${order.title}`}
+                                  onClick={() => setPlanningOrder(order)}><CalendarMonthOutlinedIcon fontSize="small" /></IconButton></Tooltip>
                                 <Tooltip title="Editar orçamento"><IconButton size="small"
                                                                               aria-label={`Editar orçamento da ordem ${order.title}`}
                                                                               onClick={() => startQuote(order)}><RequestQuoteOutlinedIcon
-                                    fontSize="small"/></IconButton></Tooltip>}<Tooltip
+                                    fontSize="small"/></IconButton></Tooltip></>}<Tooltip
                                 title={order.delivery ? "Imprimir termo de entrega e garantia" : "Imprimir ordem"}><IconButton size="small"
                                                                    aria-label={`Imprimir ${order.delivery ? "termo de entrega" : "ordem"} ${order.title}`}
                                                                    onClick={() => startPrint(order)}>
@@ -386,7 +400,11 @@ export default function OrdersPage() {
                                     <IconButton size="small"
                                                                                            aria-label={`Enviar ordem ${order.title} por e-mail`}
                                                                                            onClick={() => startEmail(order)}><EmailOutlinedIcon
-                                    fontSize="small"/></IconButton></Tooltip>}</Stack></TableCell>
+                                    fontSize="small"/></IconButton></Tooltip>}
+                                <Tooltip title="Ver histórico"><IconButton size="small"
+                                  aria-label={`Ver histórico da ordem ${order.title}`}
+                                  onClick={() => setTimelineOrder(order)}><HistoryOutlinedIcon fontSize="small" /></IconButton></Tooltip>
+                            </Stack></TableCell>
                         </TableRow>)}
                     </TableBody>
                 </Table></TableContainer>
@@ -434,17 +452,24 @@ export default function OrdersPage() {
                                                                                            onChange={(e) => set("priority", e.target.value as ServiceOrderPriority)}>{["LOW", "NORMAL", "HIGH", "URGENT"].map((priority) =>
                     <MenuItem key={priority} value={priority}>{enumLabel(priority)}</MenuItem>)}</Select></FormControl>
                 <Stack direction={{xs: "column", sm: "row"}} spacing={2}
-                       alignItems="flex-start">{(users.length > 0 || can("USER_MANAGE")) &&
+                       alignItems="flex-start">{(technicians.length > 0 || can("USER_MANAGE")) &&
                     <Box sx={{width: "100%"}}><FormControl fullWidth><InputLabel>Técnico responsável</InputLabel><Select
                         label="Técnico responsável" value={form.assignedTechnicianId}
                         onChange={(e) => set("assignedTechnicianId", e.target.value)}><MenuItem value="">Não
-                        atribuído</MenuItem>{users.filter((user) => user.roles.includes("TECHNICIAN") && user.status === "ACTIVE").map((user) =>
-                        <MenuItem value={user.id} key={user.id}>{user.name}</MenuItem>)}
+                        atribuído</MenuItem>{technicians.map((user) => <MenuItem value={user.id} key={user.id}>{user.name}</MenuItem>)}
                     </Select></FormControl>{can("USER_MANAGE") && <RelatedCreateButton label="Cadastrar novo técnico"
                                                                                        onClick={() => setQuickTechnicianOpen(true)}/>}
                     </Box>}<TextField label="Prazo" type="datetime-local" value={form.dueAt}
                                       onChange={(e) => set("dueAt", e.target.value)} fullWidth
                                       slotProps={{inputLabel: {shrink: true}}}/></Stack>
+                <Stack direction={{xs: "column", sm: "row"}} spacing={2}>
+                    <TextField label="Início agendado" type="datetime-local" value={form.scheduledStartAt}
+                               onChange={(e) => set("scheduledStartAt", e.target.value)} fullWidth
+                               required={Boolean(form.scheduledEndAt)} slotProps={{inputLabel: {shrink: true}}}/>
+                    <TextField label="Fim agendado" type="datetime-local" value={form.scheduledEndAt}
+                               onChange={(e) => set("scheduledEndAt", e.target.value)} fullWidth
+                               required={Boolean(form.scheduledStartAt)} slotProps={{inputLabel: {shrink: true}}}/>
+                </Stack>
             </Stack></DialogContent><DialogActions sx={{p: 2.5}}><Button onClick={() => setOpen(false)}
                                                                          disabled={saving}>Cancelar</Button><Button
                 type="submit" variant="contained"
@@ -515,6 +540,11 @@ export default function OrdersPage() {
                                       disabled={quoteSaving}>Cancelar</Button><Button variant="contained" startIcon={
                 <RequestQuoteOutlinedIcon/>} onClick={saveQuote}
                                                                                       disabled={quoteSaving || (quoteRequiresAsset && !quoteAssetId)}>{quoteSaving ? "Salvando..." : "Salvar orçamento"}</Button></DialogActions></Dialog>
+            <OrderPlanningDialog order={planningOrder} technicians={technicians}
+                                 onClose={() => setPlanningOrder(null)} onUpdated={(updated) => {
+                setOrders((current) => current.map((item) => item.id === updated.id ? updated : item));
+            }}/>
+            <OrderTimelineDialog order={timelineOrder} onClose={() => setTimelineOrder(null)}/>
             <ServiceOrderDocumentDialog open={Boolean(printOrder)} document={printDocument} loading={printLoading}
                                         error={printError} onClose={() => !printLoading && setPrintOrder(null)}
                                         onRetry={() => printOrder && loadPrintDocument(printOrder)}/>
@@ -581,7 +611,7 @@ export default function OrdersPage() {
             }}/>
             <QuickTechnicianDialog open={quickTechnicianOpen} onClose={() => setQuickTechnicianOpen(false)}
                                    onCreated={(technician) => {
-                                       setUsers((current) => [technician, ...current]);
+                                       setTechnicians((current) => [{id: technician.id, name: technician.name}, ...current]);
                                        set("assignedTechnicianId", technician.id);
                                    }}/>
         </>
