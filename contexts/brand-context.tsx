@@ -5,6 +5,7 @@ import { apiRequest } from "@/lib/api";
 import { publicMediaUrl } from "@/lib/public-profile";
 import type { AppearanceSettings, Branding } from "@/lib/types";
 import { createTheme, CssBaseline, ThemeProvider } from "@mui/material";
+import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 export interface BrandSettings {
@@ -35,6 +36,24 @@ interface BrandContextValue {
 
 const BrandContext = createContext<BrandContextValue | null>(null);
 
+const dashboardRoutes = [
+  "/admin",
+  "/aparencia",
+  "/ativos",
+  "/clientes",
+  "/configuracoes",
+  "/dashboard",
+  "/ordens",
+  "/pagina-publica",
+  "/seguranca",
+  "/servicos",
+  "/usuarios",
+];
+
+function isDashboardRoute(pathname: string) {
+  return dashboardRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+}
+
 function fromRemote(remote: Branding): BrandSettings {
   return {
     ...defaults,
@@ -60,6 +79,7 @@ function fromSettings(settings: AppearanceSettings): BrandSettings {
 
 export function BrandProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const pathname = usePathname();
   const [brand, setBrand] = useState(defaults);
   const [remoteBrand, setRemoteBrand] = useState<Branding | null>(null);
 
@@ -107,18 +127,20 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
     setBrand(restored);
   }, [remoteBrand]);
 
+  const darkModeEnabled = brand.darkMode && isDashboardRoute(pathname);
+
   const theme = useMemo(() => createTheme({
     palette: {
-      mode: brand.darkMode ? "dark" : "light",
+      mode: darkModeEnabled ? "dark" : "light",
       primary: { main: brand.primaryColor },
       secondary: { main: brand.secondaryColor },
-      background: brand.darkMode
+      background: darkModeEnabled
         ? { default: "#0B1120", paper: "#111827" }
         : { default: "#F5F7FB", paper: "#FFFFFF" },
-      text: brand.darkMode
+      text: darkModeEnabled
         ? { primary: "#F3F4F6", secondary: "#A7B0C0" }
         : { primary: "#172033", secondary: "#667085" },
-      divider: brand.darkMode ? "#2A364A" : "#E5E9F2",
+      divider: darkModeEnabled ? "#2A364A" : "#E5E9F2",
     },
     shape: { borderRadius: brand.borderRadius },
     typography: {
@@ -136,8 +158,8 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       MuiCard: {
         styleOverrides: {
           root: {
-            border: `1px solid ${brand.darkMode ? "#2A364A" : "#E5E9F2"}`,
-            boxShadow: brand.darkMode ? "0 1px 3px rgba(0,0,0,.35)" : "0 1px 3px rgba(16,24,40,.04)",
+            border: `1px solid ${darkModeEnabled ? "#2A364A" : "#E5E9F2"}`,
+            boxShadow: darkModeEnabled ? "0 1px 3px rgba(0,0,0,.35)" : "0 1px 3px rgba(16,24,40,.04)",
             backgroundImage: "none",
           },
         },
@@ -151,7 +173,7 @@ export function BrandProvider({ children }: { children: React.ReactNode }) {
       },
       MuiDialog: { styleOverrides: { paper: { backgroundImage: "none" } } },
     },
-  }), [brand]);
+  }), [brand, darkModeEnabled]);
 
   const value = useMemo(() => ({ brand, remoteBrand, saveBrand, restoreRemoteBrand, loadBranding }),
     [brand, loadBranding, remoteBrand, restoreRemoteBrand, saveBrand]);

@@ -19,7 +19,7 @@ test("legal documents are publicly accessible", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Política de Privacidade", level: 1 })).toBeVisible();
 });
 
-test("applies the tenant dark mode from remote branding", async ({ page }) => {
+test("keeps public authentication pages light when the tenant uses dark mode", async ({ page }) => {
   await page.route("**/api/backend/branding?slug=dark-workshop", async (route) => {
     await route.fulfill({
       contentType: "application/json",
@@ -37,7 +37,14 @@ test("applies the tenant dark mode from remote branding", async ({ page }) => {
   await page.goto("/?tenant=dark-workshop");
 
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor))
-    .toBe("rgb(11, 17, 32)");
+    .toBe("rgb(245, 247, 251)");
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
-    .toBe("dark");
+    .toBe("light");
+
+  await page.goto("/cadastro?tenant=dark-workshop");
+
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.body).backgroundColor))
+    .toBe("rgb(245, 247, 251)");
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).colorScheme))
+    .toBe("light");
 });
