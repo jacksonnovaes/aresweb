@@ -6,6 +6,7 @@ import { StatusChip } from "@/components/common/status-chip";
 import { useAuth } from "@/contexts/auth-context";
 import { apiRequest, errorMessage } from "@/lib/api";
 import { formatDateTime } from "@/lib/format";
+import { calendarDayKey, groupScheduledOrdersByDay, type ScheduleDayEntry } from "@/lib/schedule-calendar";
 import type { Customer, ServiceOrder, ServiceOrderTechnician } from "@/lib/types";
 import CalendarMonthOutlinedIcon from "@mui/icons-material/CalendarMonthOutlined";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
@@ -21,13 +22,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const monthTitle = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" });
 const time = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" });
-
-function dayKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function monthGrid(month: Date) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -76,15 +70,7 @@ export default function SchedulePage() {
   const technicianMap = useMemo(() => new Map(technicians.map((technician) => [technician.id, technician.name])), [technicians]);
   const visibleOrders = useMemo(() => orders.filter((order) => order.scheduledStartAt &&
     (technicianFilter === "all" || order.assignedTechnicianId === technicianFilter)), [orders, technicianFilter]);
-  const ordersByDay = useMemo(() => {
-    const grouped = new Map<string, ServiceOrder[]>();
-    visibleOrders.forEach((order) => {
-      const key = dayKey(new Date(order.scheduledStartAt!));
-      grouped.set(key, [...(grouped.get(key) ?? []), order]);
-    });
-    grouped.forEach((items) => items.sort((a, b) => a.scheduledStartAt!.localeCompare(b.scheduledStartAt!)));
-    return grouped;
-  }, [visibleOrders]);
+  const ordersByDay = useMemo(() => groupScheduledOrdersByDay(visibleOrders), [visibleOrders]);
   const days = useMemo(() => monthGrid(month), [month]);
   const unscheduled = orders.filter((order) => !order.scheduledStartAt && order.status !== "COMPLETED" &&
     (technicianFilter === "all" || order.assignedTechnicianId === technicianFilter));
@@ -118,17 +104,23 @@ export default function SchedulePage() {
         <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
           {weekDays.map((day) => <Box key={day} sx={{ p: 1.25, textAlign: "center", borderBottom: "1px solid", borderColor: "divider", bgcolor: "action.hover" }}><Typography variant="caption" fontWeight={800}>{day}</Typography></Box>)}
           {days.map((date) => {
-            const key = dayKey(date);
+            const key = calendarDayKey(date);
             const dayOrders = ordersByDay.get(key) ?? [];
             const outside = date.getMonth() !== month.getMonth();
-            const today = key === dayKey(new Date());
+            const today = key === calendarDayKey(new Date());
             return <Box key={key} sx={{ minHeight: 132, p: 1, borderRight: "1px solid", borderBottom: "1px solid", borderColor: "divider", bgcolor: outside ? "action.hover" : "background.paper", opacity: outside ? 0.62 : 1 }}>
               <Chip label={date.getDate()} size="small" color={today ? "primary" : "default"} variant={today ? "filled" : "outlined"} sx={{ mb: 0.75, height: 25 }} />
-              <Stack spacing={0.75}>{dayOrders.map((order) => <Box component={Link} href="/ordens" key={order.id}
-                sx={{ display: "block", textDecoration: "none", color: "inherit", p: 0.8, borderRadius: 1.5, bgcolor: "primary.main", "&:hover": { bgcolor: "primary.dark" } }}>
-                <Typography variant="caption" color="primary.contrastText" fontWeight={800} display="block">{time.format(new Date(order.scheduledStartAt!))} · {order.title}</Typography>
-                <Typography variant="caption" color="primary.contrastText" sx={{ opacity: 0.82 }} noWrap>{technicianMap.get(order.assignedTechnicianId ?? "") ?? "Sem técnico"}</Typography>
-              </Box>)}</Stack>
+              <Stack spacing={0.75}>{dayOrders.map(({ order, phase }: ScheduleDayEntry) => {
+                const scheduleLabel = phase === "single"
+                  ? `${time.format(new Date(order.scheduledStartAt!))} - ${time.format(new Date(order.scheduledEndAt!))}`
+                  : phase === "start" ? `Início ${time.format(new Date(order.scheduledStartAt!))}`
+                  : phase === "end" ? `Fim ${time.format(new Date(order.scheduledEndAt!))}` : "Continuação";
+                return <Box component={Link} href="/ordens" key={`${order.id}-${key}`}
+                  sx={{ display: "block", textDecoration: "none", color: "inherit", p: 0.8, borderRadius: 1.5, bgcolor: "primary.main", "&:hover": { bgcolor: "primary.dark" } }}>
+                  <Typography variant="caption" color="primary.contrastText" fontWeight={800} display="block">{scheduleLabel} · {order.title}</Typography>
+                  <Typography variant="caption" color="primary.contrastText" sx={{ opacity: 0.82 }} noWrap>{technicianMap.get(order.assignedTechnicianId ?? "") ?? "Sem técnico"}</Typography>
+                </Box>;
+              })}</Stack>
             </Box>;
           })}
         </Box>
