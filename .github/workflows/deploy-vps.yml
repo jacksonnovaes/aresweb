@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - development
+      - develop
   pull_request:
     branches:
       - main
-      - development
+      - develop
   workflow_dispatch:
 
 concurrency:
@@ -71,7 +71,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: jacksonnovaes/ares-api
-          ref: development
+          ref: ${{ github.ref_name == 'main' && 'main' || 'development' }}
           path: bundle/ares-api
           token: ${{ secrets.CROSS_REPOSITORY_TOKEN }}
           persist-credentials: false
