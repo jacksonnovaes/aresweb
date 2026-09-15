@@ -6,17 +6,18 @@ import {StatusChip} from "@/components/common/status-chip";
 import {DataManagementCard} from "@/components/privacy/data-management-card";
 import {CommunicationSettingsCard} from "@/components/settings/communication-settings-card";
 import {apiRequest, errorMessage} from "@/lib/api";
-import type {CompanySettings, QuoteCalculationMethod, ServiceOrderStatusDefinition} from "@/lib/types";
+import type {CompanySettings, QuoteCalculationMethod, ServiceOrderStatusDefinition, SubscriptionBillingCycle, SubscriptionPlan, SubscriptionUpgradeOptions, SubscriptionUpgradeResult} from "@/lib/types";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import AssignmentTurnedInRoundedIcon from "@mui/icons-material/AssignmentTurnedInRounded";
 import CreditCardRoundedIcon from "@mui/icons-material/CreditCardRounded";
 import DevicesOtherRoundedIcon from "@mui/icons-material/DevicesOtherRounded";
 import SaveRoundedIcon from "@mui/icons-material/SaveRounded";
 import SquareFootRoundedIcon from "@mui/icons-material/SquareFootRounded";
+import UpgradeRoundedIcon from "@mui/icons-material/UpgradeRounded";
 import {
-    Alert, Box, Button, Card, CardContent, Checkbox, Chip, FormControl, FormControlLabel,
-    FormHelperText, InputAdornment, InputLabel, ListItemText, MenuItem, Select, Stack, Switch,
-    TextField, Typography,
+    Alert, Box, Button, Card, CardContent, Checkbox, Chip, Dialog, DialogActions, DialogContent,
+    DialogTitle, FormControl, FormControlLabel, FormHelperText, InputAdornment, InputLabel, ListItemText,
+    MenuItem, Select, Stack, Switch, TextField, ToggleButton, ToggleButtonGroup, Typography,
 } from "@mui/material";
 import {FormEvent, useCallback, useEffect, useState} from "react";
 
@@ -53,6 +54,16 @@ export default function CompanySettingsPage() {
     const [statusName, setStatusName] = useState("");
     const [statusSaving, setStatusSaving] = useState(false);
     const [statusError, setStatusError] = useState("");
+    const [upgradeOpen, setUpgradeOpen] = useState(false);
+    const [upgradeOptions, setUpgradeOptions] = useState<SubscriptionUpgradeOptions | null>(null);
+    const [upgradePlan, setUpgradePlan] = useState<SubscriptionPlan | "">("");
+    const [upgradeCycle, setUpgradeCycle] = useState<SubscriptionBillingCycle>("MONTHLY");
+    const [upgradeSeats, setUpgradeSeats] = useState(0);
+    const [upgradeConfirmed, setUpgradeConfirmed] = useState(false);
+    const [upgradeLoading, setUpgradeLoading] = useState(false);
+    const [upgradeSaving, setUpgradeSaving] = useState(false);
+    const [upgradeError, setUpgradeError] = useState("");
+    const [upgradeSuccess, setUpgradeSuccess] = useState("");
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -79,6 +90,60 @@ export default function CompanySettingsPage() {
     useEffect(() => {
         void load();
     }, [load]);
+
+    async function openUpgrade() {
+        setUpgradeOpen(true);
+        setUpgradeLoading(true);
+        setUpgradeError("");
+        setUpgradeConfirmed(false);
+        try {
+            const options = await apiRequest<SubscriptionUpgradeOptions>("/company-settings/subscription-upgrade");
+            setUpgradeOptions(options);
+            setUpgradePlan(options.plans[0]?.code ?? "");
+            setUpgradeCycle(settings?.subscriptionBillingCycle ?? "MONTHLY");
+            setUpgradeSeats(settings?.additionalUserSeats ?? 0);
+        } catch (err) {
+            setUpgradeError(errorMessage(err));
+        } finally {
+            setUpgradeLoading(false);
+        }
+    }
+
+    async function confirmUpgrade() {
+        if (!upgradePlan) return;
+        setUpgradeSaving(true);
+        setUpgradeError("");
+        try {
+            const result = await apiRequest<SubscriptionUpgradeResult>("/company-settings/subscription-upgrade", {
+                method: "POST",
+                body: {
+                    plan: upgradePlan,
+                    billingCycle: upgradeCycle,
+                    additionalUserSeats: upgradeSeats,
+                    simulatedPaymentApproved: upgradeConfirmed,
+                },
+            });
+            setSettings((current) => current ? {
+                ...current,
+                subscriptionPlan: result.plan,
+                subscriptionBillingCycle: result.billingCycle,
+                subscriptionActive: result.subscriptionActive,
+                subscriptionPaidUntil: result.paidUntil,
+                subscriptionPrice: result.price,
+                couponCode: null,
+                couponDiscountPercentage: 0,
+                includedUserLimit: result.userLimit - result.additionalUserSeats,
+                additionalUserSeats: result.additionalUserSeats,
+                userLimit: result.userLimit,
+            } : current);
+            setUpgradeSuccess(`Upgrade para o plano ${result.planName} concluído. Nova vigência até ${date.format(new Date(result.paidUntil))}.`);
+            setUpgradeOpen(false);
+        } catch (err) {
+            setUpgradeError(errorMessage(err));
+        } finally {
+            setUpgradeSaving(false);
+        }
+    }
 
     async function submit(event: FormEvent) {
         event.preventDefault();
@@ -160,7 +225,12 @@ export default function CompanySettingsPage() {
                                 <Chip label={`${settings.additionalUserSeats} adicional(is)`} size="small"
                                       variant="outlined"/>}{settings.couponCode &&
                                 <Chip label={`Cupom ${settings.couponCode} · ${settings.couponDiscountPercentage}% off`}
-                                      size="small" color="success" variant="outlined"/>}</Stack></Box>
+                                      size="small" color="success" variant="outlined"/>}</Stack>
+                                {settings.subscriptionPlan !== "BUSINESS" && <Button variant="contained"
+                                    startIcon={<UpgradeRoundedIcon/>} onClick={() => void openUpgrade()} sx={{mt: 2}}>
+                                    Fazer upgrade
+                                </Button>}
+                            </Box>
                             <Box sx={{textAlign: {sm: "right"}}}><Typography variant="overline"
                                                                              color="text.secondary">Situação</Typography><Box
                                 mt={0.5}><Chip
@@ -172,6 +242,8 @@ export default function CompanySettingsPage() {
                     </Box>
                     <Alert
                         severity={settings.subscriptionActive ? "success" : "warning"}>{settings.subscriptionActive ? `A assinatura está confirmada. O plano inclui ${settings.includedUserLimit} usuário(s) e possui ${settings.additionalUserSeats} acesso(s) adicional(is).` : "O acesso da empresa permanece bloqueado até a confirmação da assinatura."}</Alert>
+                    {upgradeSuccess && <Alert severity="success" onClose={() => setUpgradeSuccess("")}>{upgradeSuccess}</Alert>}
+                    {settings.subscriptionPlan === "BUSINESS" && <Alert severity="info">Sua empresa já está no plano mais completo.</Alert>}
                 </Stack></CardContent></Card>
                 <Card><Box component="form" onSubmit={submit}><CardContent sx={{p: {xs: 2.5, sm: 3.5}}}><Stack
                     spacing={2.5}>
@@ -360,6 +432,67 @@ export default function CompanySettingsPage() {
                 </Stack></CardContent></Card>
                 <DataManagementCard/>
             </Stack>}
+            <Dialog open={upgradeOpen} onClose={() => !upgradeSaving && setUpgradeOpen(false)} fullWidth maxWidth="sm">
+                <DialogTitle>Upgrade de plano<Typography variant="body2" color="text.secondary" mt={0.5}>
+                    Escolha o novo plano e confira o valor antes de confirmar.
+                </Typography></DialogTitle>
+                <DialogContent dividers><Stack spacing={2.25}>
+                    {upgradeLoading && <PageLoading label="Carregando planos..."/>}
+                    {upgradeError && <Alert severity="error">{upgradeError}</Alert>}
+                    {!upgradeLoading && upgradeOptions && <>
+                        {!upgradeOptions.upgradeEnabled && <Alert severity="warning">O checkout ainda não está configurado. Entre em contato para solicitar a alteração do plano.</Alert>}
+                        {upgradeOptions.plans.length > 0 && <>
+                            <FormControl fullWidth>
+                                <InputLabel>Novo plano</InputLabel>
+                                <Select label="Novo plano" value={upgradePlan} onChange={(event) => setUpgradePlan(event.target.value as SubscriptionPlan)}>
+                                    {upgradeOptions.plans.map((plan) => <MenuItem key={plan.code} value={plan.code}>
+                                        {plan.name} · {plan.includedUsers} usuário(s) incluído(s)
+                                    </MenuItem>)}
+                                </Select>
+                            </FormControl>
+                            <ToggleButtonGroup exclusive fullWidth color="primary" value={upgradeCycle}
+                                onChange={(_, value: SubscriptionBillingCycle | null) => value && setUpgradeCycle(value)}>
+                                <ToggleButton value="MONTHLY">Mensal</ToggleButton>
+                                <ToggleButton value="ANNUAL">Anual</ToggleButton>
+                            </ToggleButtonGroup>
+                            <TextField label="Usuários adicionais" type="number" value={upgradeSeats}
+                                onChange={(event) => setUpgradeSeats(Math.max(0, Math.min(100, Number(event.target.value))))}
+                                helperText="Além dos usuários já incluídos no novo plano."
+                                slotProps={{htmlInput: {min: 0, max: 100, step: 1}}}/>
+                            {(() => {
+                                const plan = upgradeOptions.plans.find((item) => item.code === upgradePlan);
+                                if (!plan) return null;
+                                const basePrice = upgradeCycle === "ANNUAL" ? plan.annualPrice : plan.monthlyPrice;
+                                const seatPrice = upgradeCycle === "ANNUAL"
+                                    ? upgradeOptions.additionalUserAnnualPrice : upgradeOptions.additionalUserMonthlyPrice;
+                                const total = basePrice + seatPrice * upgradeSeats;
+                                return <Box sx={{p: 2.25, border: "1px solid", borderColor: "divider", borderRadius: 2.5, bgcolor: "action.hover"}}>
+                                    <Stack direction="row" justifyContent="space-between" alignItems="baseline">
+                                        <Box><Typography fontWeight={850}>{plan.name}</Typography><Typography variant="body2" color="text.secondary">
+                                            {plan.includedUsers + upgradeSeats} usuário(s) no total
+                                        </Typography></Box>
+                                        <Box textAlign="right"><Typography variant="h3">{currency.format(total)}</Typography><Typography variant="caption" color="text.secondary">
+                                            por {upgradeCycle === "ANNUAL" ? "ano" : "mês"}
+                                        </Typography></Box>
+                                    </Stack>
+                                    {upgradeCycle === "ANNUAL" && <Typography variant="body2" color="success.main" mt={1}>
+                                        Equivale a {currency.format(total / 12)} por mês.
+                                    </Typography>}
+                                </Box>;
+                            })()}
+                            <Alert severity="info">Pagamento simulado: nenhuma cobrança real será feita. A nova vigência começa na confirmação.</Alert>
+                            <FormControlLabel control={<Checkbox checked={upgradeConfirmed}
+                                onChange={(event) => setUpgradeConfirmed(event.target.checked)}/>} label="Confirmo o upgrade e o pagamento simulado."/>
+                        </>}
+                    </>}
+                </Stack></DialogContent>
+                <DialogActions sx={{p: 2.5}}><Button onClick={() => setUpgradeOpen(false)} disabled={upgradeSaving}>Cancelar</Button>
+                    <Button variant="contained" startIcon={<UpgradeRoundedIcon/>} onClick={() => void confirmUpgrade()}
+                        disabled={upgradeSaving || upgradeLoading || !upgradeOptions?.upgradeEnabled || !upgradePlan || !upgradeConfirmed}>
+                        {upgradeSaving ? "Confirmando..." : "Confirmar upgrade"}
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </>
     );
 }

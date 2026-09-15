@@ -185,6 +185,26 @@ export interface CompanySettings {
   additionalUserMonthlyPrice: number;
 }
 
+export interface SubscriptionUpgradeOptions {
+  upgradeEnabled: boolean;
+  currentPlan: SubscriptionPlan;
+  plans: SubscriptionPlanOption[];
+  additionalUserMonthlyPrice: number;
+  additionalUserAnnualPrice: number;
+}
+
+export interface SubscriptionUpgradeResult {
+  plan: SubscriptionPlan;
+  planName: string;
+  billingCycle: SubscriptionBillingCycle;
+  additionalUserSeats: number;
+  userLimit: number;
+  price: number;
+  monthlyEquivalent: number;
+  subscriptionActive: boolean;
+  paidUntil: string;
+}
+
 export interface CommunicationSettings {
   whatsappEnabled: boolean;
   whatsappNumber?: string | null;

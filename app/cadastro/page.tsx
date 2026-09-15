@@ -182,9 +182,9 @@ function RegisterPageContent() {
   const additionalUserUnitPrice =
       form.billingCycle === "ANNUAL"
           ? registrationConfig
-          ?.additionalUserAnnualPrice ?? 129
+          ?.additionalUserAnnualPrice ?? 99
           : registrationConfig
-          ?.additionalUserMonthlyPrice ?? 12.9;
+          ?.additionalUserMonthlyPrice ?? 9.9;
 
   const set = <
       K extends keyof RegistrationForm,

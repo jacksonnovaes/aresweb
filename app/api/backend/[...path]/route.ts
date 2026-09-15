@@ -12,7 +12,7 @@ const allowedPaths = [
   /^onboarding$/,
   /^branding$/,
   /^appearance-settings$/,
-  /^company-settings$/,
+  /^company-settings(?:\/subscription-upgrade)?$/,
   /^communication-settings$/,
   /^public-profile-settings$/,
   /^public-profile-media\/(?:BRAND|PROFILE|LOGO|BACKGROUND)$/,

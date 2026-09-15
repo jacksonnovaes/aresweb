@@ -23,13 +23,13 @@ export default function ServicesPage() {
     const [items, setItems] = useState<CatalogService[]>([]);
     const [companySettings, setCompanySettings] = useState<CompanySettings>({
         requireAssets: true, subscriptionPlan: "SOLO", subscriptionBillingCycle: "MONTHLY",
-        subscriptionActive: false, subscriptionPaidUntil: null, subscriptionPrice: 29.9,
+        subscriptionActive: false, subscriptionPaidUntil: null, subscriptionPrice: 19.9,
         couponDiscountPercentage: 0,
         quoteCalculationMethod: "QUANTITY",
         enabledQuoteCalculationMethods: ["QUANTITY", "SQUARE_METER", "CUBIC_METER"],
         defaultSquareMeterPrice: null,
         defaultCubicMeterPrice: null, includedUserLimit: 1, additionalUserSeats: 0,
-        userLimit: 1, additionalUserMonthlyPrice: 12.9,
+        userLimit: 1, additionalUserMonthlyPrice: 9.9,
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
